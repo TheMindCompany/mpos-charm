@@ -59,10 +59,11 @@ finish_apt(){
 ppa_php(){
   add-apt-repository -y ppa:ondrej/php5-oldstable && apt-get -y update
   apt-get -y install php5 php5-gd php5-curl php5-cli php5-cgi php5-dev php5-fpm php5-memcached php5-mysqlnd
+  finish_apt
 }
 
 get_mysql(){
-  apt-get -y mysql-server mysql-client mysqli
+  apt-get -y install mysql-server mysql-client
 }
 
 get_apache2(){
