@@ -62,7 +62,7 @@ ppa_php(){
 }
 
 get_mysql(){
-  apt-get -y mysql-server mysql-client
+  apt-get -y mysql-server mysql-client mysqli
 }
 
 get_apache2(){
