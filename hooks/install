@@ -1,0 +1,419 @@
+#!/bin/bash
+set -e
+
+juju-log "########################################################################"
+juju-log "##                                                                    ##"
+juju-log "## Install MPOS	                                                ##"
+juju-log "## Author: Brandon L. Clark <support@themindspot.com>                 ##"
+juju-log "##                                                                    ##"
+juju-log "## Description: This script will install the MPOS crypto currency     ##"
+juju-log "## pool server.   Learn more at https://github.com/MPOS/php-mpos.     ##"
+juju-log "##                                                                    ##"
+juju-log "########################################################################"
+
+##################################################################################
+# Get 'config.yaml' settings.
+##################################################################################
+
+alerts_email=`config-get alerts_email`
+mpos_user=`config-get mpos_user`
+mpos_pass=`config-get mpos_pass`
+rpc_port=`config-get rpc_port`
+rpc_timeout=`config-get rpc_timeout`
+pool_wallet=`config-get pool_wallet`
+cpu_cores=`config-get cpu_cores`
+coin_type=`config-get coin_type`
+host_id=`config-get host_id`
+db_name=`config-get db_name`
+db_user=`config-get db_user`
+db_pass=`config-get db_pass`
+pool_target=`config-get pool_target`
+block_hash=`config-get block_hash`
+base_dir=`config-get base_dir`
+
+##################################################################################
+# Get environment settings.
+##################################################################################
+
+RELEASE_VERSION=`lsb_release -sr`
+MACHINE_TYPE=`uname -m`
+host_id=``
+MACHINE_ADDRESS='localhost'
+
+#################################################################################
+# General setup functions
+#################################################################################
+
+cd ${base_dir}
+
+system_update(){
+  juju-log " + Upgrading software packages... "
+  apt-get -y update && apt-get -y upgrade
+  juju-log "   Finished upgrading packages. "
+}
+
+finish_apt(){
+  apt-get -y -f install
+}
+
+git_libdb48(){
+  juju-log " + Installing libdb4.8 dependecies."
+  finish_apt
+  if [ ${RELEASE_VERSION} != '12.04' ]; then
+    juju-log "12.10 or above!"
+    #TODO Add system specific files.  Currently: Quantal, Precise 
+    if [ ${MACHINE_TYPE} == 'x86_64' ]; then
+      # 64-bit stuff here
+      juju-log "64bit"
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8_4.8.30-quantal2_amd64.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8-dev_4.8.30-quantal2_amd64.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8%2B%2B_4.8.30-quantal2_amd64.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8%2B%2B-dev_4.8.30-quantal2_amd64.deb
+      dpkg -i libdb4.8_4.8.30-quantal2_amd64.deb
+      dpkg -i libdb4.8-dev_4.8.30-quantal2_amd64.deb
+      dpkg -i libdb4.8++_4.8.30-quantal2_amd64.deb
+      dpkg -i libdb4.8++-dev_4.8.30-quantal2_amd64.deb
+    else
+      # 32-bit stuff here
+      juju-log "32bit"
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8_4.8.30-quantal2_i386.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8-dev_4.8.30-quantal2_i386.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8%2B%2B_4.8.30-quantal2_i386.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8%2B%2B-dev_4.8.30-quantal2_i386.deb
+      dpkg -i libdb4.8_4.8.30-quantal2_i386.deb
+      dpkg -i libdb4.8-dev_4.8.30-quantal2_i386.deb
+      dpkg -i libdb4.8++_4.8.30-quantal2_i386.deb
+      dpkg -i libdb4.8++-dev_4.8.30-quantal2_i386.deb
+    fi
+  else
+    juju-log "12.04!"
+    if [ ${MACHINE_TYPE} == 'x86_64' ]; then
+      # 64-bit stuff here
+      juju-log "64bit"
+      wget https://launchpad.net/ubuntu/+source/db4.8/4.8.30-11ubuntu1/+build/3392251/+files/libdb4.8-dev_4.8.30-11ubuntu1_amd64.deb
+      wget https://launchpad.net/ubuntu/+source/db4.8/4.8.30-11ubuntu1/+build/3392251/+files/libdb4.8_4.8.30-11ubuntu1_amd64.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8%2B%2B_4.8.30-10precise1_amd64.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8%2B%2B-dev_4.8.30-10precise1_amd64.deb
+      dpkg -i libdb4.8-dev_4.8.30-11ubuntu1_amd64.deb
+      dpkg -i libdb4.8_4.8.30-11ubuntu1_amd64.deb
+      dpkg -i libdb4.8++_4.8.30-10precise1_amd64.deb
+      dpkg -i libdb4.8++-dev_4.8.30-10precise1_amd64.deb
+    else
+      # 32-bit stuff here
+      juju-log "32bit"
+      wget https://launchpad.net/ubuntu/+source/db4.8/4.8.30-11ubuntu1/+build/3392254/+files/libdb4.8-dev_4.8.30-11ubuntu1_i386.deb
+      wget https://launchpad.net/ubuntu/+source/db4.8/4.8.30-11ubuntu1/+build/3392254/+files/libdb4.8_4.8.30-11ubuntu1_i386.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8%2B%2B_4.8.30-10precise1_i386.deb
+      wget https://launchpad.net/~bitcoin/+archive/bitcoin/+files/libdb4.8%2B%2B-dev_4.8.30-10precise1_i386.deb
+      dpkg -i libdb4.8_4.8.30-11ubuntu1_i386.deb
+      dpkg -i libdb4.8-dev_4.8.30-11ubuntu1_i386.deb
+      dpkg -i libdb4.8++_4.8.30--10-precise1_i386.deb
+      dpkg -i libdb4.8++-dev_4.8.30-10precise1_i386.deb
+    fi
+  fi
+  juju-log "   Finished installing libdb4.8. "
+}
+
+ppa_php(){
+  add-apt-repository -y ppa:ondrej/php5-oldstable && apt-get -y update
+  apt-get -y install php5 php5-gd php5-mysql php5-curl php5-cli php5-cgi php5-dev php5-fpm php5-memcached
+}
+
+get_mysql(){
+  apt-get -y mysql-server mysql-client
+}
+
+get_apache2(){
+  apt-get -y install apache2 libapache2-mod-php5
+}
+
+lamp_package(){
+  finish_apt
+  debconf-set-selections <<< 'mysql-server mysql-server/root_password password '${db_pass}''
+  debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password '${db_pass}''
+  apt-get -y install lamp-server^
+  #get_apache2 && get_mysql && ppa_php
+}
+
+easy_package(){
+  rm /usr/bin/easy_install*
+  rm /usr/local/bin/easy_install*
+  curl -O http://python-distribute.org/distribute_setup.py
+  sudo python distribute_setup.py
+  rm distribute_setup.py
+}
+
+make_db(){
+  sudo mysql -u root --password=${db_pass} --execute="create database ${db_name}"
+}
+
+base_dev(){
+  juju-log " + Installing needed development packages... "
+  apt-get -y install build-essential libcap2-bin git-core automake autoconf curl python-software-properties 
+  finish_apt
+  apt-get -y install libcurl4-gnutls-dev yasm libncurses5-dev pkg-config libtool libmemcached-dev libcrypto++-dev 
+  finish_apt
+  apt-get -y install python-zope.interface python-twisted python-twisted-web python-mysqldb python-dev python-setuptools python-memcache python-simplejson postfix memcached python-pylibmc
+  finish_apt
+  apt-get -y install sqlite3 postgresql libssl-dev libminiupnpc-dev libdb4.8:i386 libstdc++6:i386 libstdc++6 libdb5.1++-dev libqrencode-dev libminiupnpc-dev libcurl4-openssl-dev libdb5.1-dev
+  finish_apt 
+  apt-get -y install libboost1.46-dev libboost-graph1.46-dev libboost-graph-dev libboost-graph-parallel1.46-dev libboost-graph-parallel-dev libboost-iostreams1.46-dev libboost-iostreams-dev libboost-math1.46-dev libboost-math-dev libboost-mpi1.46-dev libboost-mpi-dev libboost-mpi-python-dev libboost-program-options1.46-dev libboost-program-options-dev libboost-python1.46-dev libboost-python-dev libboost-regex1.46-dev libboost-regex-dev libboost-serialization1.46-dev libboost-serialization-dev libboost-signals1.46-dev libboost-signals-dev libboost-system1.46-dev libboost-system-dev libboost-test1.46-dev libboost-test-dev libboost-thread1.46-dev libboost-thread-dev libboost-wave1.46-dev libboost-wave-dev libboost-filesystem1.46-dev libboost-filesystem-dev libboost-date-time1.46-dev libboost-date-time-dev libboost-dev libboost-all-dev 
+  finish_apt
+  lamp_package
+  git_libdb48
+  easy_package
+  finish_apt
+  make_db
+  juju-log "   Finished installing development packages. "
+
+}
+
+##################################################################################
+# General crypto currency function.
+##################################################################################
+
+auth(){
+  juju-log " + Setting coin .conf file..."
+  mkdir /home/ubuntu/.${coin_type}
+  cat > /home/ubuntu/.${coin_type}/${coin_type}.conf <<EOF
+server=1
+rpcport=${rpc_port}
+rpctimeout=${rpc_timeout}
+rpcuser=${mpos_user}
+rpcpassword=${mpos_pass}
+EOF
+  chmod go-rwx /home/ubuntu/.${coin_type}/${coin_type}.conf
+  juju-log "   Finishing user configuration."
+}
+
+#################################################################################
+# bitcoind setup functions
+#################################################################################
+
+build_bitcoind(){
+  cd bitcoin/src/
+  make -f makefile.unix USE_UPNP=- 
+  cp bitcoind /usr/bin/
+  cd ../..
+}
+
+git_bitcoind(){
+  juju-log " + Cloning bitcoind an building..."
+  git clone https://github.com/bitcoin/bitcoin.git
+  cd bitcoin
+  git checkout v0.8.6
+  cd ..
+  build_bitcoind
+  juju-log "   Finishing bitcoind!"
+}
+
+#################################################################################
+# dogecoind setup functions
+#################################################################################
+
+build_dogecoind(){
+  cd dogecoin/src/
+  make -f makefile.unix USE_UPNP=-
+  cp dogecoind /usr/bin/
+  cd ../..
+}
+
+git_dogecoind(){
+  juju-log " + Cloning dogecoind an building..."
+  git clone https://github.com/dogecoin/dogecoin.git
+  build_dogecoind
+  juju-log "   Finishing dogecoind!"
+}
+
+#################################################################################
+# litecoind setup functions
+#################################################################################
+
+build_litecoind(){
+  cd litecoin/src/
+  make -f makefile.unix USE_UPNP=-
+  cp litecoind /usr/bin/
+  cd ../..
+}
+
+git_litecoind(){
+  juju-log " + Cloning litecoind and building..."
+  git clone https://github.com/litecoin-project/litecoin.git
+  build_litecoind
+  juju-log "   Finishing litecoind!"
+}
+
+#################################################################################
+# Stratum setup functions
+#################################################################################
+
+init_stratum(){
+  cd stratum-mining
+  twistd -y launcher.tac
+  cd ..
+}
+
+edit_websocket(){
+  sudo sed -i -e "s/autobahn/autobahn\.twisted/g" /usr/local/lib/python2.7/dist-packages/stratum-0.2.13-py2.7.egg/stratum/websocket_transport.py
+}
+
+config_stratum(){
+  cp stratum-mining/conf/config_sample.py stratum-mining/conf/config.py
+  cd stratum-mining/conf/
+  sudo sed -i -e 's/set_valid_addresss_in_config!/'${pool_wallet}'/g' config.py		#CENTRAL_WALLET
+  ##TODO Work on auto configure for when a coinbase is on another server.
+  #sudo sed -i -e 's//'${MACHINE_ADDRESS}'/g' config.py					#COINDAEMON_TRUSTED_HOST 
+  ##TODO Make rpc_* be more specific for later implimentation of backup coinbase's					
+  sudo sed -i -e "s/COINDAEMON_TRUSTED_PORT = [0-9]*[0-9]/COINDAEMON_TRUSTED_PORT = ${rpc_port}/g" config.py    #COINDAEMON_TRUSTED_PORT
+  sudo sed -i -e 's/user/'${mpos_user}'/g' config.py					#COINDAEMON_TRUSTED_USER
+  sudo sed -i -e 's/somepassword/'${mpos_pass}'/g' config.py				#COINDAEMON_TRUSTED_PASSWORD 
+  if [ ${coin_type} == "bitcoin" ]; then						#COINDAEMON_ALGO 
+    sudo sed -i -e "s/COINDAEMON_ALGO = ['][a-z]*[a-z][']/COINDAEMON_ALGO = \'sha256d\'/g" config.py    
+  elif [ ${coin_type} == "litecoin" ]; then						 
+    sudo sed -i -e "s/COINDAEMON_ALGO = ['][a-z]*[a-z][']/COINDAEMON_ALGO = \'scrypt\'/g" config.py    
+  elif [ ${coin_type} == "dogecoin" ]; then						 
+    sudo sed -i -e "s/COINDAEMON_ALGO = ['][a-z]*[a-z][']/COINDAEMON_ALGO = \'scrypt\'/g" config.py    
+  fi
+  if [ ${coin_type} == "bitcoin" ]; then						#COINDAEMON_SHA256_TX (default=no)	
+    ##TODO fix search string for (COINDAEMON_TX = 'no')	
+    sudo sed -i -e "s/COINDAEMON_TX = ['][a-z]*[a-z][']/COINDAEMON_TX = \'yes\'/g" config.py
+  fi
+  ##TODO Refine search (HOSTNAME = 'localhost')
+  #sudo sed -i -e 's//'${host_id}'/g' config.py						#HOSTNAME 
+  #sudo sed -i -e 's//mysql/g' config.py						#DATABASE_DRIVER
+  #sudo sed -i -e 's//localhost/g' config.py						#DB_MYSQL_HOST
+  sudo sed -i -e "s/DB_MYSQL_DBNAME = ['][a-z]*[a-z][']/DB_MYSQL_DBNAME = '${db_name}'/g" config.py #DB_MYSQL_DBNAME
+  sudo sed -i -e "s/DB_MYSQL_USER = ['][a-z]*[a-z][']/DB_MYSQL_USER = '${db_user}'/g" config.py #DB_MYSQL_USER
+  sudo sed -i -e 's/\*\*empty\*\*/'${db_pass}'/g' config.py				#DB_MYSQL_PASS
+  sudo sed -i -e 's/POOL_TARGET = 32/POOL_TARGET = '${pool_target}'/g' config.py	#POOL_TARGET
+  #sudo sed -i -e 's//'${block_hash}'/g' config.py					#SOLUTION_BLOCK_HASH (DEFAULT=TRUE)
+  cd ../..
+}
+
+build_stratum_1(){
+  cd stratum-mining
+  git submodule init
+  git submodule update
+  ##TODO Direct install to proper coin_type
+  cd externals/litecoin_scrypt
+  sudo python setup.py install
+  cd ../../..
+}
+
+build_stratum_2(){
+  cd stratum-mining/externals/stratum
+  sudo python setup.py install
+  cd ../../..
+}
+
+git_stratum(){
+  git clone https://github.com/ahmedbodi/stratum-mining.git
+  git clone https://github.com/ahmedbodi/stratum.git
+  ## Direct install to proper coin_type
+}
+
+stratum_exec(){
+  juju-log " + Cloning stratum repositories and building..."
+  git_stratum && build_stratum_1 && build_stratum_2
+  config_stratum && init_stratum && edit_websocket
+  finish_apt
+  juju-log "   Finishing MPOS!"
+}
+
+#################################################################################
+# MPOS setup functions
+#################################################################################
+
+cron_mpos(){
+  cd /var/www/MPOS/cronjobs
+  ./run-crons.sh
+  cd ${base_dir}
+}
+
+config_mpos(){
+  # SALTS generate random 32 character alphanumeric string (upper and lowercase)
+  salt=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+  salty=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+  cd /var/www/MPOS/public/include/config
+  sudo cp global.inc.dist.php global.inc.php
+  sudo sed -i -e 's/PLEASEMAKEMESOMETHINGRANDOM/'${salt}'/g' global.inc.php	#Salt
+  sudo sed -i -e 's/THISSHOULDALSOBERRAANNDDOOM/'${salty}'/g' global.inc.php	#Salty
+  #$config['db']['host'] = 'localhost';
+  #$config['db']['user'] = 'root';
+  sudo sed -i -e 's/somepass/'${db_pass}'/g' global.inc.php #$config['db']['pass']	
+  #$config['db']['port'] = 3306;
+  sudo sed -i -e 's/someuser/'${db_user}'/g' global.inc.php 
+  sudo sed -i -e "s/name[']] = ['][a-z]*[a-z][']/name\'\] = '${db_name}'/g" global.inc.php #$config['db']['name'] = 'mpos';
+  #$config['wallet']['type'] = 'http';
+  sudo sed -i -e 's/localhost\:19334/'${MACHINE_ADDRESS}'\:'${rpc_port}'/g' global.inc.php #$config['wallet']['host'] = 'localhost:19334';
+  sudo sed -i -e "s/username[']] = ['][a-z]*[a-z][']/username\'\] = '${mpos_user}'/g" global.inc.php #$config['wallet']['username'] = 'testnet';
+  sudo sed -i -e "s/password[']] = ['][a-z]*[a-z][']/password\'\] = '${mpos_pass}'/g" global.inc.php #$config['wallet']['password'] = 'testnet';
+  #$config['gettingstarted']['stratumurl'] = 'localhost';
+}
+
+mpos_sql(){
+  juju-log " + Setting MPOS SQL structure..."
+  cd /var/www/MPOS
+  sudo mysql -u root --password=${db_pass} ${db_name} < sql/000_base_structure.sql
+  sudo mysql -u root --password=${db_pass} ${db_name} < sql/013_tokentype_update.sql
+  cd ${base_dir}
+  juju-log "   Finishing SQL structure!"
+}
+
+git_mpos_depends(){
+  juju-log " + Setting up MPOS depends..."
+  if [ ${coin_type} == "litecoin" ]; then
+    git clone https://github.com/Tydus/litecoin_scrypt.git
+  elif [ ${coin_type} == "dogecoin" ]; then
+    git clone https://github.com/Tydus/litecoin_scrypt.git
+  #elif [ ${coin_type} == "bitcoin" ]; then 
+  fi
+  stratum_exec
+  juju-log "   Finishing MPOS depends setup!"
+}
+
+git_mpos(){
+  juju-log " + Cloning MPOS repository..."
+  cd /var/www
+  git clone git://github.com/MPOS/php-mpos.git MPOS
+  cd MPOS
+  git checkout master
+  chown www-data public/templates/compile public/templates/cache
+  mpos_sql
+  cd ${base_dir}
+  git_mpos_depends
+  apache2ctl -k stop; sleep 2; sudo apache2ctl -k start
+  juju-log "   Finishing MPOS setup!"
+}
+
+mpos_exec(){
+  juju-log " + Preparing MPOS to initiate..."
+  git_mpos && config_mpos
+  juju-log "   Finishing. MPOS is started!"
+}
+
+
+#################################################################################
+# Main function: start
+#################################################################################
+
+coin_exec(){
+  juju-log " + Installing "${coin_type}"d... "
+  git_${coin_type}d && auth && sudo nohup ${coin_type}d -daemon
+  juju-log "   Finished installing "${coin_type}"d. "
+}
+
+start_install() {
+  juju-log "Starting to install MPOS suite... "
+  system_update
+  base_dev && coin_exec
+  mpos_exec
+  system_update
+  juju-log "Successfully installed MPOS. "
+}
+start_install
+
+open-port 80/TCP
+open-port 443/TCP
+open-port 3333/TCP
+open-port ${rpc_port}/TCP

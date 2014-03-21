@@ -1,0 +1,4 @@
+#!/bin/bash
+# config-changed occurs everytime a new configuration value is updated (juju set)
+# This applies to the juju set <service> <setting> feature for configuration and will
+# need special consideration for certain mpos default configuration parameters. 

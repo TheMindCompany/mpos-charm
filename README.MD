@@ -1,0 +1,86 @@
+# Overview
+
+This is a Juju charm for Ubuntu Juju (Learn more: juju.ubuntu.com).
+
+This can launch a single server cryptocoin pool or be extended to launch a entire cryptocoin clound network using the MPOS frontend and either a P2PPool server or Stratum poll server. See "Scale Out Usage" for details.
+
+# Usage
+
+To deploy a fully functional litecoin pool server the following default command can be ran with no configuration:
+
+    juju deploy mpos
+    juju expose mpos
+
+TO configure the specific parameters of MPOS and pool servers see "Configuration". 
+
+You can then browse to http://your-address/MPOS/public to configure the first password and user or admin. 
+
+## Scale out Usage
+
+MPOS charm can be ran as a single pool server instance with front end for small load handling.  You can span out your MPOS charm network by seperating your services like so:
+
+  More MPOS frontend instances:
+    juju add-unit -n <number_of_instances> mpos
+    juju deploy haproxy
+    juju add relation mpos haproxy 
+    juju expose haproxy
+
+  MYSQL:
+    juju deploy mysql
+    juju add-relation mpos:db mysql
+
+Note:The following charms are not et crewated because they are to be a product of this project.
+  CyptoCoin:
+    juju deploy cryptocoin
+    juju add-relation mpos cryptocoin
+
+  PoolServer:
+    juju deploy poolserver
+    juju add-relation mpos poolserver
+
+All configuration must be made to he MPOS charm.  Configuration parameters for mysql, cryptocoin, and poolserver do not need to be set and if they are will be overridden by relationship. 
+
+## Known Limitations and Issues
+
+TBA!!!
+
+# Configuration
+
+The following are editable configuration parameters. 
+
+  coin_type:The crypto currency you wish to mine.(e.g. bitcoin, litecoin, dogecoin)
+  host_id: 
+  mpos_user:This is for user name configuration.
+  mpos_pass:This is for rpc user password configuration.
+  db_name:
+  db_user:
+  db_pass:
+  rpc_port:
+  rpc_timeout:
+  pool_wallet:Where you want the pool profits to be sent.
+  cpu_cores:This is for running parrelel task to setup. 
+  alerts_email:This is for bicoind alerts.
+  block_hash:
+  pool_target:
+  base_dir:Base directory where files will be installed from or to. (Leave the trailing"/" off)
+
+To launch a instance with a specific set of configuration parameters can be done in two ways.  First the following can be put into the command line at delpoyment(longer deployment time):
+
+	juju set mpos <setting>=<value> <setting>=<value> <setting>=<value>
+
+Or a better way would be to set it at launch by editing the config file <provide-link-later> and typing the following command:
+
+        juju deploy --config myconfig.yaml mpos
+
+# Contact Information
+
+Brandon L. Clark <support@themindspot.com>
+IRC (FREENODE) <webbrandon> or <weblife>
+
+## Upstream Project Name
+
+TBA
+- Upstream website
+- Upstream bug tracker
+- Upstream mailing list or contact information
+- Feel free to add things if it's useful for users

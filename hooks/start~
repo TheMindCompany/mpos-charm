@@ -1,0 +1,16 @@
+#!/bin/bash
+# Here put anything that is needed to start the service.
+# Note that currently this is run directly after install
+# i.e. 'service apache2 start'
+
+
+coin_type=`config-get coin_type`
+base_dir=`config-get base_dir`
+
+cd ${base_dir}
+
+nohup ${coin_type}d -daemon
+
+cd stratum-mining
+nohup twistd -y launcher.tac
+cd ..

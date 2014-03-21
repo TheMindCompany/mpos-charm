@@ -1,0 +1,61 @@
+options:
+  coin_type:
+    type: string
+    default: "litecoin"
+    description: The crypto currency you wish to mine.(e.g. bitcoin, litecoin, dogecoin)
+  host_id:
+    type: string
+    default: "localhost"
+    description: 
+  mpos_user:
+    type: string
+    default: "coinrpcuser"
+    description: This is for user name configuration.
+  mpos_pass:
+    type: string
+    default: "13rUVnQTFkw7k7Pz4iXWawxQgkYYKUeXHUroSFnSiDB"
+    description: This is for rpc user password configuration.
+  db_name:
+    type: string
+    default: "mind"
+    description: 
+  db_user:
+    type: string
+    default: "root"
+    description: 
+  db_pass:
+    type: string
+    default: "shizzlenizzle"
+    description: 
+  rpc_port:
+    type: int
+    default: 19323
+    description: 
+  rpc_timeout:
+    type: int
+    default: 30
+    description: 
+  pool_wallet:
+    type: string
+    default: "DU3NrH5D285x9ajoFux4GRK53HeVmxbfdP"
+    description: Where you want the pool profits to be sent.
+  cpu_cores:
+    type: int
+    default: 1
+    description: This is for running parrelel task to setup.  
+  alerts_email:
+    type: string
+    default: "user@support.com"
+    description: This is for bicoind alerts.
+  block_hash:
+    type: boolean
+    default: true
+    description: 
+  pool_target:
+    type: int
+    default: 32
+    description:
+  base_dir:
+    type: string
+    default: "/opt"
+    description: Base directory where files will be installed from or to. (Leave the trailing"/" off)

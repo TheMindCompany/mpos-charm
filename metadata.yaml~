@@ -1,0 +1,17 @@
+name: mpos
+summary: Crypto currency frontend MPOS is a open source project. 
+maintainer: Brandon L Clark <support@themindspot.com>
+description: |
+  <Multi-line description here>
+categories:
+  - misc
+subordinate: false
+provides:
+  provides-relation:
+    interface: interface-name
+requires:
+  requires-relation:
+    interface: interface-name
+peers:
+  peer-relation:
+    interface: interface-name
