@@ -2,7 +2,7 @@
 
 This is a Juju charm for Ubuntu Juju (Learn more: juju.ubuntu.com).
 
-This can launch a single server cryptocoin pool or be extended to launch a entire cryptocoin clound network using the MPOS frontend and either a P2PPool server or Stratum poll server. See "Scale Out Usage" for details.
+This can launch a single server cryptocoin pool or be extended to launch a entire cryptocoin cloud network using the MPOS frontend and either a P2PPool server or Stratum poll server. See "Scale Out Usage" for details.
 
 # Usage
 
