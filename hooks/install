@@ -36,6 +36,7 @@ coin_target=``
 coin_diff_change_target=``
 payout_system=``
 db_host=``
+rpc_host=``
 
 ##################################################################################
 # Get environment settings.
@@ -236,7 +237,7 @@ config_stratum(){
   sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${host_id}'/g" #HOSTNAME 
   sudo sed -i -e "s/DB_MYSQL_HOST = ['][a-z]*[a-z][']/DB_MYSQL_HOST = '${db_host}'/g" #DB_MYSQL_HOST
   sudo sed -i -e "s/PASSWORD_SALT = ['][a-z]*[a-z][']/PASSWORD_SALT = '${salt2}'/g" #PASSWORD_SALT	
-  sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${}'/g" #COINDAEMON_TRUSTED_HOST
+  sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" #COINDAEMON_TRUSTED_HOST
   sudo sed -i -e "s/LISTEN_SOCKET_TRANSPORT = [0-9]*[0-9]/LISTEN_SOCKET_TRANSPORT = ${}/g" config.py #LISTEN_SOCKET_TRANSPORT	
   cd ../..
 }
