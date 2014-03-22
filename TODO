@@ -1,0 +1,109 @@
+##
+CONFIG.PY			
+##
+#LISTEN_SOCKET_TRANSPORT	...
+#COINDAEMON_TRUSTED_HOST 	...
+#CENTRAL_WALLET			*done*
+#COINDAEMON_TRUSTED_PORT	*done*
+#COINDAEMON_TRUSTED_USER	*done*
+#COINDAEMON_TRUSTED_PASSWORD 	*done*
+#COINDAEMON_ALGO 		*done*
+#COINDAEMON_TX			*done* 		Only covering bitcoin
+#HOSTNAME 			*done*
+#DB_MYSQL_HOST			*done*
+#DB_MYSQL_DBNAME		*done*
+#DB_MYSQL_USER			*done*
+#DB_MYSQL_PASS			*done*
+#POOL_TARGET			*done*
+#PASSWORD_SALT			*done*
+#SCRYPTJANE_NAME		*tbl1*		Release 2 will cover crypto currency flexability.	
+#DATABASE_DRIVER		*tbl2*		Release 3 will cover database configurations.
+#SOLUTION_BLOCK_HASH 		*tbl+*		To be done in later releases. Uncertain.
+#STRATUM_MINING_PROCESS_NAME	*tbl3*		Release 4 will cover other pooling processes.
+#DEBUG 				*tbl+* 		To be done in later releases. Uncertain.
+#LOGDIR 			*tbl+* 		To be done in later releases. Uncertain.
+#LOGFILE 			*tbl+* 		To be done in later releases. Uncertain.
+#LOGLEVEL 			*tbl+* 		To be done in later releases. Uncertain.
+#LOG_ROTATION 			*tbl+* 		To be done in later releases. Uncertain.
+#LOG_SIZE 			*tbl+* 		To be done in later releases. Uncertain.
+#LOG_RETENTION 			*tbl+* 		To be done in later releases. Uncertain.
+#THREAD_POOL_SIZE		*tbl+* 		To be done in later releases. Uncertain.
+#ENABLE_EXAMPLE_SERVICE 	*tbl+* 		To be done in later releases. Uncertain.
+#LISTEN_HTTP_TRANSPORT 		*tbl+* 		To be done in later releases. Uncertain.
+#LISTEN_HTTPS_TRANSPORT 	*tbl+* 		To be done in later releases. Uncertain.
+#LISTEN_WS_TRANSPORT		*tbl+* 		To be done in later releases. Uncertain.
+#LISTEN_WSS_TRANSPORT		*tbl+* 		To be done in later releases. Uncertain.
+
+##
+GLOBAL.INC.PHP			
+##
+#['db']['host'] 		...
+#['db']['port'] 		...	
+#['pps']['reward']['default'] 	...
+#['price']['url']		...
+#['price']['target'] 		...
+#['price']['currency'] 		...
+#['ap_threshold']['min']	...
+#['ap_threshold']['max']	...
+#['currency']			...
+#['pplns']['shares']['default'] ...
+#['SALT'] 			*done*
+#['SALTY'] 			*done*
+#['algorithm'] 			*done*
+#['db']['user'] 		*done*
+#['db']['pass'] 		*done*
+#['cointarget'] 		*done*
+#['coindiffchangetarget'] 	*done*
+#['wallet']['host'] 		*done*
+#['wallet']['username'] 	*done*
+#['wallet']['password'] 	*done*
+#['gettingstarted']['coinname'] *done*
+#['gettingstarted']['coinurl'] 	*done*
+#['gettingstarted']['stratumurl']*done*
+#['gettingstarted']['stratumport']*done*
+#['db']['name'] 		*done*
+#['payout_system'] 		*done*
+#['wallet']['type'] 		*tbl+*		To be done in later releases. Uncertain.
+#['DEBUG'] 			*tbl+*		To be done in later releases. Uncertain.
+#['mp_threshold']		*tbl+*		To be done in later releases. Uncertain.
+#['donate_threshold']['min']	*tbl+*		To be done in later releases. Uncertain.
+#['accounts']['invitations']['count']*tbl+*	To be done in later releases. Uncertain.
+#['txfee_auto'] 		*tbl1*		Release 2 will cover crypto currency flexability.
+#['txfee_manual'] 		*tbl1*		Release 2 will cover crypto currency flexability.
+#['block_bonus'] 		*tbl1*		Release 2 will cover crypto currency flexability.
+#['pool_bonus'] 		*tbl1*		Release 2 will cover crypto currency flexability.
+#['pool_bonus_type'] 		*tbl1*		Release 2 will cover crypto currency flexability.
+#['sendmany']['enabled'] 	*tbl3*		Release 4 will cover other pooling processes.
+#['payout']['txlimit_manual'] 	*tbl1*		Release 2 will cover crypto currency flexability.
+#['payout']['txlimit_auto'] 	*tbl1*		Release 2 will cover crypto currency flexability.
+#['purge']['sleep'] 		*tbl+*		To be done in later releases. Uncertain.
+#['purge']['shares'] 		*tbl+*		To be done in later releases. Uncertain.
+#['archive']['maxrounds'] 	*tbl+*		To be done in later releases. Uncertain.
+#['archive']['maxage'] 		*tbl+*		To be done in later releases. Uncertain.
+#['fees'] 			*tbl+*		To be done in later releases. Uncertain.
+#['pplns']['shares']['type'] 	*tbl+*		To be done in later releases. Uncertain.
+#['pplns']['blockavg']['blockcount']*tbl+*	To be done in later releases. Uncertain.
+#['pplns']['reverse_payout'] 	*tbl+*		To be done in later releases. Uncertain.
+#['pplns']['dynamic']['percent']*tbl+*		To be done in later releases. Uncertain.
+#['difficulty'] 		*tbl+*		To be done in later releases. Uncertain.
+#['reward_type'] 		*tbl+*		To be done in later releases. Uncertain.
+#['reward'] 			*tbl+*		To be done in later releases. Uncertain.
+#['confirmations'] 		*tbl+*		To be done in later releases. Uncertain.
+#['network_confirmations'] 	*tbl+*		To be done in later releases. Uncertain.
+#['pps']['reward']['type'] 	*tbl+*		To be done in later releases. Uncertain.
+#['pps']['blockavg']['blockcount']*tbl+*	To be done in later releases. Uncertain.
+#['memcache']['enabled'] 	*tbl+*		To be done in later releases. Uncertain.
+#['memcache']['host'] 		*tbl+*		To be done in later releases. Uncertain.
+#['memcache']['port'] 		*tbl+*		To be done in later releases. Uncertain.
+#['memcache']['keyprefix'] 	*tbl+*		To be done in later releases. Uncertain.
+#['memcache']['expiration'] 	*tbl+*		To be done in later releases. Uncertain.
+#['memcache']['splay'] 		*tbl+*		To be done in later releases. Uncertain.
+#['memcache']['force']['contrib_shares']*tbl+*	To be done in later releases. Uncertain.
+#['cookie']['duration'] 	*tbl+*		To be done in later releases. Uncertain.
+#['cookie']['domain'] 		*tbl+*		To be done in later releases. Uncertain.
+#['cookie']['path'] 		*tbl+*		To be done in later releases. Uncertain.
+#['cookie']['httponly'] 	*tbl+*		To be done in later releases. Uncertain.
+#['cookie']['secure'] 		*tbl+*		To be done in later releases. Uncertain.
+#['smarty']['cache'] 		*tbl+*		To be done in later releases. Uncertain.
+#['smarty']['cache_lifetime'] 	*tbl+*		To be done in later releases. Uncertain.
+#['system']['load']['max'] 	*tbl+*		To be done in later releases. Uncertain.
