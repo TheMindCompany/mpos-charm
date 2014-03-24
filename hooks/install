@@ -30,13 +30,23 @@ db_pass=`config-get db_pass`
 pool_target=`config-get pool_target`
 block_hash=`config-get block_hash`
 base_dir=`config-get base_dir`
-db_port=``
-coin_url=``
-coin_target=``
-coin_diff_change_target=``
-payout_system=``
-db_host=``
-rpc_host=``
+db_port=`config-get db_port`
+coin_url=`config-get coin_url`
+coin_target=`config-get coin_target`
+coin_diff_change_target=`config-get coin_diff_change_target`
+payout_system=`config-get payout_system`
+db_host=`config-get db_host`
+rpc_host=`config-get rpc_host`
+stratum_url=`config-get stratum_url`
+stratum_port=`config-get stratum_port`
+price_url=`config-get price_url`
+price_target=`config-get price_target`
+price_currency=`config-get price_currency`
+currency_abv=`config-get currency_abv`
+ap_min=`config-get ap_min`
+ap_max=`config-get ap_max`
+pps_reward=`config-get pps_reward`
+pplns_shares=`config-get pplns_shares`
 
 ##################################################################################
 # Get environment settings.
@@ -44,7 +54,7 @@ rpc_host=``
 
 RELEASE_VERSION=`lsb_release -sr`
 MACHINE_TYPE=`uname -m`
-host_id=``
+host_id=''
 MACHINE_ADDRESS='localhost'
 
 # SALTS generate random 32 character alphanumeric string (upper and lowercase)
@@ -234,11 +244,12 @@ config_stratum(){
   sudo sed -i -e "s/DB_MYSQL_USER = ['][a-z]*[a-z][']/DB_MYSQL_USER = '${db_user}'/g" config.py
   sudo sed -i -e 's/\*\*empty\*\*/'${db_pass}'/g' config.py				
   sudo sed -i -e 's/POOL_TARGET = 32/POOL_TARGET = '${pool_target}'/g' config.py
-  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${host_id}'/g" #HOSTNAME 
-  sudo sed -i -e "s/DB_MYSQL_HOST = ['][a-z]*[a-z][']/DB_MYSQL_HOST = '${db_host}'/g" #DB_MYSQL_HOST
-  sudo sed -i -e "s/PASSWORD_SALT = ['][a-z]*[a-z][']/PASSWORD_SALT = '${salt2}'/g" #PASSWORD_SALT	
-  sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" #COINDAEMON_TRUSTED_HOST
-  sudo sed -i -e "s/LISTEN_SOCKET_TRANSPORT = [0-9]*[0-9]/LISTEN_SOCKET_TRANSPORT = ${}/g" config.py #LISTEN_SOCKET_TRANSPORT	
+  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${host_id}'/g" config.py 
+  sudo sed -i -e "s/DB_MYSQL_HOST = ['][a-z]*[a-z][']/DB_MYSQL_HOST = '${db_host}'/g" config.py 
+  sudo sed -i -e "s/PASSWORD_SALT = ['][a-z]*[a-z][']/PASSWORD_SALT = '${salt2}'/g" config.py 
+  sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" config.py 
+  sudo sed -i -e "s/LISTEN_SOCKET_TRANSPORT = [0-9]*[0-9]/LISTEN_SOCKET_TRANSPORT = ${stratum_port}/g" config.py 
+  sudo sed -i -e "s/DB_MYSQL_PORT = [0-9]*[0-9]/DB_MYSQL_PORT = ${db_port}/g" config.py 	
   cd ../..
 }
 
@@ -289,47 +300,27 @@ config_mpos(){
   sudo sed -i -e 's/THISSHOULDALSOBERRAANNDDOOM/'${salty}'/g' global.inc.php	
   sudo sed -i -e 's/somepass/'${db_pass}'/g' global.inc.php 	
   sudo sed -i -e 's/someuser/'${db_user}'/g' global.inc.php 
-
-  #TODO Conflicts with any (name']) setting.
-  #sudo sed -i -e "s/name[']] = ['][a-z]*[a-z][']/name\'\] = '${db_name}'/g" global.inc.php 
+  sudo sed -i -e "s/db['][]][[][']name[']] = ['][a-z]*[a-z][']/db\'\]\[\'name\'\] = '${db_name}'/g" global.inc.php 
   sudo sed -i -e "s/username[']] = ['][a-z]*[a-z][']/username\'\] = '${mpos_user}'/g" global.inc.php 
   sudo sed -i -e "s/password[']] = ['][a-z]*[a-z][']/password\'\] = '${mpos_pass}'/g" global.inc.php 
-  
-  #TODO Conflicts with memcache host setting.
-  #sudo sed -i -e "s/host[']] = ['][a-z]*[a-z][']/host\'\] = '${db_host}'/g" global.inc.php #['db']['host']
-
-  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${MACHINE_ADDRESS}'\:'${rpc_port}'/g" global.inc.php #['wallet']['host']
-
-  #TODO Conflicts with memcache host setting.
-  #sudo sed -i -e "s/port[']] = [0-9]*[0-9]/port\'\]  = ${db_port}/g" global.inc.php #['db']['port']
-
-  sudo sed -i -e "s/coinname[']] = ['][a-z]*[a-z][']/coinname\'\] = '${coin_type}'/g" global.inc.php #['gettingstarted']['coinname'] 
-  sudo sed -i -e "s/coinurl[']] = ['][a-z]*[a-z][']/coinurl\'\] = '${coin_url}'/g" global.inc.php #['gettingstarted']['coinurl'] 	
-  sudo sed -i -e "s/stratumurl[']] = ['][a-z]*[a-z][']/stratumurl\'\] = '${}'/g" global.inc.php #['gettingstarted']['stratumurl']
-  sudo sed -i -e "s/stratumport[']] = ['][0-9]*[0-9][']/stratumport\'\] = '${}'/g" global.inc.php #['gettingstarted']['stratumport']
-
-  #TODO Conflicts with any (url']) settings.
-  #sudo sed -i -e "s/url[']] = ['][a-z]*[a-z][']/url\'\] = '${}'/g" global.inc.php #['price']['url']	
-
-  #TODO Conflicts with any (target']) setting.
-  #sudo sed -i -e "s/target[']] = ['][a-z]*[a-z][']/target\'\] = '${}'/g" global.inc.php #['price']['target'] 
-
-  #TODO Conflicts with currency setting.		
-  #sudo sed -i -e "s/currency[']] = ['][a-z]*[a-z][']/currency\'\] = '${}'/g" global.inc.php #['price']['currency'] 
-  #sudo sed -i -e "s/[']] = ['][a-z]*[a-z][']/\'\] = '${}'/g" global.inc.php #['currency']
-		
-  #TODO Conflicts with any (min']) settings.
-  #sudo sed -i -e "s/min[']] = [0-9]*[0-9]/min\'\]  = ${}/g" global.inc.php #['ap_threshold']['min']	
-  #TODO Conflicts with any (max']) settings.
-  #sudo sed -i -e "s/max[']] = [0-9]*[0-9]/max\'\]  = ${}/g" global.inc.php #['ap_threshold']['max']	
-		
-  sudo sed -i -e "s/cointarget[']] = ['][0-9]*[0-9][']/cointarget\'\] = '${coin_target}'/g" global.inc.php #['cointarget'] 		
-  sudo sed -i -e "s/coindiffchangetarget[']] = [0-9]*[0-9]/\'\]  = ${coin_diff_change_target}/g" global.inc.php #['coindiffchangetarget']
-  sudo sed -i -e "s/payout_system[']] = ['][a-z]*[a-z][']/payout_system\'\] = '${payout_system}'/g" global.inc.php #['payout_system']
-
-  #TODO Conflicts with any (default']) settings.
-  #sudo sed -i -e "s/default[']] = [0-9]*[0-9]/default\'\]  = ${}/g" global.inc.php #['pplns']['shares']['default']
-  #sudo sed -i -e "s/default[']] = [0-9]*[0-9]/default\'\]  = ${}/g" global.inc.php #['pps']['reward']['default']
+  sudo sed -i -e "s/db['][]][[][']host[']] = ['][a-z]*[a-z][']/db\'\]\[\'host\'\] = '${db_host}'/g" global.inc.php 
+  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${MACHINE_ADDRESS}'\:'${rpc_port}/g" global.inc.php 
+  sudo sed -i -e "s/db['][]][[][']port[']] = [0-9]*[0-9]/db\'\]\[\'port\'\]  = ${db_port}/g" global.inc.php 
+  sudo sed -i -e "s/coinname[']] = ['][A-Za-z]*[a-z]['];/coinname\'\] = '${coin_type}';/g" global.inc.php 
+  sudo sed -i -e "s/coinurl[']] = ['][a-z]*[a-z]:\/\/[a-z]*[a-z].[a-z]*[a-z].[a-z]*[a-z]['];/coinurl\'\] = '${coin_url}';/g" global.inc.php #TODO Dynamic search neds to be better.
+  sudo sed -i -e "s/stratumurl[']] = [']*['];/stratumurl\'\] = '${stratum_url}';/g" global.inc.php 
+  sudo sed -i -e "s/stratumport[']] = ['][0-9]*[0-9][']/stratumport\'\] = '${stratum_port}'/g" global.inc.php 
+  sudo sed -i -e "s/price['][]][[][']url[']] = ['][a-z]*[a-z]:\/\/[a-z]*[a-z]-[a-z]*[a-z].[a-z]*[a-z][']/price\'\]\[\'url\'\] = '${price_url}'/g" global.inc.php #TODO Dynamic search neds to be better.
+  sudo sed -i -e "s/price['][]][[][']target[']] = [']\/[a-z]*[a-z]\/[0-9]*[0-9]\/[a-z]*[a-z]_[a-z]*[a-z]\/[a-z]*[a-z]/price\'\]\[\'target\'\] = '${price_target}'/g" global.inc.php #TODO Dynamic search neds to be better.
+  sudo sed -i -e "s/price['][]][[][']currency[']] = ['][A-Z]*[A-Z][']/price\'\]\[\'currency\'\] = '${price_currency}'/g" global.inc.php 
+  sudo sed -i -e "s/config[[][']currency[']] = ['][A-Z]*[A-Z][']/config\[\'currency\'\] = '${currency_abv}'/g" global.inc.php 
+  sudo sed -i -e "s/ap_threshold['][]][[][']min[']] = [0-9]*[0-9]/ap_threshold\'\]\[\'min\'\]  = ${ap_min}/g" global.inc.php 
+  sudo sed -i -e "s/ap_threshold['][]][[][']max[']] = [0-9]*[0-9]/ap_threshold\'\]\[\'max\'\]  = ${ap_max}/g" global.inc.php 
+  sudo sed -i -e "s/cointarget[']] = ['][0-9]*[0-9][']/cointarget\'\] = '${coin_target}'/g" global.inc.php 
+  sudo sed -i -e "s/coindiffchangetarget[']] = [0-9]*[0-9]/coindiffchangetarget\'\]  = ${coin_diff_change_target}/g" global.inc.php 
+  sudo sed -i -e "s/payout_system[']] = ['][a-z]*[a-z][']/payout_system\'\] = '${payout_system}'/g" global.inc.php 
+  sudo sed -i -e "s/shares['][]][[][']default[']] = [0-9]*[0-9]/shares\'\]\[\'default\'\]  = ${pplns_shares}/g" global.inc.php 
+  sudo sed -i -e "s/reward['][]][[][']default[']] = [0-9]*[0-9]/reward\'\]\[\'default\'\]  = ${pps_reward}/g" global.inc.php
   cd ${base_dir}
 }
 

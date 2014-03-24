@@ -1,8 +1,15 @@
+#LIST#################################################################
+- Add open mysql port command for db_port specification.
+- Decompose charm for proposed charms.(see README)
+- Add relation settings for proposed charms.(see juju.ubuntu.com)
+- Find values of duplication.
+- Clean up development dependecies.
+
 ##
 CONFIG.PY			
 ##
-#LISTEN_SOCKET_TRANSPORT	...
-#DB_MYSQL_PORT 			...
+#LISTEN_SOCKET_TRANSPORT	*done*
+#DB_MYSQL_PORT 			*done*
 #COINDAEMON_TRUSTED_HOST 	*done*
 #CENTRAL_WALLET			*done*
 #COINDAEMON_TRUSTED_PORT	*done*
@@ -86,16 +93,16 @@ CONFIG.PY
 ##
 GLOBAL.INC.PHP			
 ##
-#['db']['host'] 		...
-#['db']['port'] 		...	
-#['pps']['reward']['default'] 	...
-#['price']['url']		...
-#['price']['target'] 		...
-#['price']['currency'] 		...
-#['ap_threshold']['min']	...
-#['ap_threshold']['max']	...
-#['currency']			...
-#['pplns']['shares']['default'] ...
+#['db']['host'] 		*done*
+#['db']['port'] 		*done*	
+#['pps']['reward']['default'] 	*done*
+#['price']['url']		*done*
+#['price']['target'] 		*done*
+#['price']['currency'] 		*done*
+#['ap_threshold']['min']	*done*
+#['ap_threshold']['max']	*done*
+#['currency']			*done*
+#['pplns']['shares']['default'] *done*
 #['SALT'] 			*done*
 #['SALTY'] 			*done*
 #['algorithm'] 			*done*
