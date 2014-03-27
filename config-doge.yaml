@@ -1,7 +1,7 @@
 options:
   coin_type:
     type: string
-    default: "litecoin"
+    default: "dogecoin"
     description: The crypto currency you wish to mine.(e.g. bitcoin, litecoin, dogecoin)
   mpos_user:
     type: string
@@ -14,31 +14,31 @@ options:
   db_name:
     type: string
     default: "mind"
-    description:
+    description: 
   db_user:
     type: string
     default: "root"
-    description:
+    description: 
   db_pass:
     type: string
     default: "shizzlenizzle"
-    description:
+    description: 
   rpc_port:
     type: int
     default: 19323
-    description:
+    description: 
   rpc_timeout:
     type: int
     default: 30
-    description:
+    description: 
   pool_wallet:
     type: string
-    default: "Ld3oYrJf8GP3cJ9AHiWoRZs4JGKgMKF5MN"
+    default: "DU3NrH5D285x9ajoFux4GRK53HeVmxbfdP"
     description: Where you want the pool profits to be sent.
   cpu_cores:
     type: int
     default: 1
-    description: This is for running parrelel task to setup.
+    description: This is for running parrelel task to setup.  
   alerts_email:
     type: string
     default: "user@support.com"
@@ -46,7 +46,7 @@ options:
   block_hash:
     type: boolean
     default: true
-    description:
+    description: 
   pool_target:
     type: int
     default: 32
@@ -58,67 +58,67 @@ options:
   db_port:
     type: int
     default: 3306
-    description:
+    description: 
   coin_url:
     type: string
-    default: "http://www.litecoin.org"
-    description:
+    default: "http://www.mycoin.org"
+    description: 
   coin_target:
     type: int
     default: 150
-    description:
+    description: 
   coin_diff_change_target:
     type: int
     default: 2016
-    description:
+    description: 
   payout_system:
     type: string
     default: "prop"
-    description:
+    description: 
   db_host:
     type: string
-    default: "localhost"
-    description:
+    default: "54.215.230.152"
+    description: 
   rpc_host:
     type: string
-    default: "localhost"
-    description:
+    default: "54.215.230.152"
+    description: 
   stratum_url:
     type: string
-    default: ""
-    description:
+    default: "54.215.230.152"
+    description: 
   stratum_port:
     type: int
     default: 3333
-    description:
+    description: 
   price_url:
     type: string
-    default: "https://btc-e.com"
-    description:
+    default: "https://my-market.com"
+    description: 
   price_target:
     type: string
-    default: "/api/2/ltc_usd/ticker"
-    description:
+    default: "/tick/this"
+    description: 
   price_currency:
     type: string
     default: "USD"
-    description:
+    description: 
   currency_abv:
     type: string
-    default: "LTC"
-    description:
+    default: "DOGE"
+    description: 
   ap_min:
     type: int
     default: 1
-    description:
+    description: 
   ap_max:
     type: int
     default: 250
-    description:
+    description: 
   pps_reward:
     type: int
     default: 4000000
-    description:
+    description: 
   pplns_shares:
     type: int
     default: 50

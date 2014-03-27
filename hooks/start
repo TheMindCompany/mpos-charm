@@ -9,7 +9,7 @@ base_dir=`config-get base_dir`
 
 cd ${base_dir}
 
-nohup ${coin_type}d -daemon
+nohup ${coin_type}d -conf=/home/ubuntu/.${coin_type}/${coin_type}.conf -daemon
 
 cd stratum-mining
 nohup twistd -y launcher.tac

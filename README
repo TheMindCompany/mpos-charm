@@ -27,7 +27,8 @@ MPOS charm can be ran as a single pool server instance with front end for small 
 
   MYSQL:
     juju deploy mysql
-    juju add-relation mpos:db mysql
+    juju add-relation mpos mysql
+    juju add-relation poolserver mysql
 
 Note:The following charms are not et crewated because they are to be a product of this project.
   CyptoCoin:

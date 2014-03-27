@@ -296,22 +296,19 @@ cron_mpos(){
 config_mpos(){
   cd /var/www/MPOS/public/include/config
   sudo cp global.inc.dist.php global.inc.php
-  sudo sed -i -e 's/PLEASEMAKEMESOMETHINGRANDOM/'${salt}'/g' global.inc.php	
-  sudo sed -i -e 's/THISSHOULDALSOBERRAANNDDOOM/'${salty}'/g' global.inc.php	
-  sudo sed -i -e 's/somepass/'${db_pass}'/g' global.inc.php 	
-  sudo sed -i -e 's/someuser/'${db_user}'/g' global.inc.php 
+  sudo sed -i -e "s/PLEASEMAKEMESOMETHINGRANDOM/${salt}/g" global.inc.php
+  sudo sed -i -e "s/THISSHOULDALSOBERRAANNDDOOM/${salty}/g" global.inc.php	
+  sudo sed -i -e "s/somepass/${db_pass}/g" global.inc.php 
+  sudo sed -i -e "s/someuser/${db_user}/g" global.inc.php 
   sudo sed -i -e "s/db['][]][[][']name[']] = ['][a-z]*[a-z][']/db\'\]\[\'name\'\] = '${db_name}'/g" global.inc.php 
   sudo sed -i -e "s/username[']] = ['][a-z]*[a-z][']/username\'\] = '${mpos_user}'/g" global.inc.php 
   sudo sed -i -e "s/password[']] = ['][a-z]*[a-z][']/password\'\] = '${mpos_pass}'/g" global.inc.php 
   sudo sed -i -e "s/db['][]][[][']host[']] = ['][a-z]*[a-z][']/db\'\]\[\'host\'\] = '${db_host}'/g" global.inc.php 
-  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${MACHINE_ADDRESS}'\:'${rpc_port}/g" global.inc.php 
+  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${MACHINE_ADDRESS}\:${rpc_port}/g" global.inc.php 
   sudo sed -i -e "s/db['][]][[][']port[']] = [0-9]*[0-9]/db\'\]\[\'port\'\]  = ${db_port}/g" global.inc.php 
-  sudo sed -i -e "s/coinname[']] = ['][A-Za-z]*[a-z]['];/coinname\'\] = '${coin_type}';/g" global.inc.php 
-  sudo sed -i -e "s/coinurl[']] = ['][a-z]*[a-z]:\/\/[a-z]*[a-z].[a-z]*[a-z].[a-z]*[a-z]['];/coinurl\'\] = '${coin_url}';/g" global.inc.php #TODO Dynamic search neds to be better.
+  sudo sed -i -e "s/coinname[']] = ['][A-Z]*[a-z]*[a-z][']/coinname\'\] = '${coin_type}'/g" global.inc.php 
   sudo sed -i -e "s/stratumurl[']] = [']*['];/stratumurl\'\] = '${stratum_url}';/g" global.inc.php 
-  sudo sed -i -e "s/stratumport[']] = ['][0-9]*[0-9][']/stratumport\'\] = '${stratum_port}'/g" global.inc.php 
-  sudo sed -i -e "s/price['][]][[][']url[']] = ['][a-z]*[a-z]:\/\/[a-z]*[a-z]-[a-z]*[a-z].[a-z]*[a-z][']/price\'\]\[\'url\'\] = '${price_url}'/g" global.inc.php #TODO Dynamic search neds to be better.
-  sudo sed -i -e "s/price['][]][[][']target[']] = [']\/[a-z]*[a-z]\/[0-9]*[0-9]\/[a-z]*[a-z]_[a-z]*[a-z]\/[a-z]*[a-z]/price\'\]\[\'target\'\] = '${price_target}'/g" global.inc.php #TODO Dynamic search neds to be better.
+  sudo sed -i -e "s/stratumport[']] = ['][0-9]*[0-9][']/stratumport\'\] = '${stratum_port}'/g" global.inc.php 	
   sudo sed -i -e "s/price['][]][[][']currency[']] = ['][A-Z]*[A-Z][']/price\'\]\[\'currency\'\] = '${price_currency}'/g" global.inc.php 
   sudo sed -i -e "s/config[[][']currency[']] = ['][A-Z]*[A-Z][']/config\[\'currency\'\] = '${currency_abv}'/g" global.inc.php 
   sudo sed -i -e "s/ap_threshold['][]][[][']min[']] = [0-9]*[0-9]/ap_threshold\'\]\[\'min\'\]  = ${ap_min}/g" global.inc.php 
@@ -319,8 +316,11 @@ config_mpos(){
   sudo sed -i -e "s/cointarget[']] = ['][0-9]*[0-9][']/cointarget\'\] = '${coin_target}'/g" global.inc.php 
   sudo sed -i -e "s/coindiffchangetarget[']] = [0-9]*[0-9]/coindiffchangetarget\'\]  = ${coin_diff_change_target}/g" global.inc.php 
   sudo sed -i -e "s/payout_system[']] = ['][a-z]*[a-z][']/payout_system\'\] = '${payout_system}'/g" global.inc.php 
-  sudo sed -i -e "s/shares['][]][[][']default[']] = [0-9]*[0-9]/shares\'\]\[\'default\'\]  = ${pplns_shares}/g" global.inc.php 
+  sudo sed -i -e "s/shares['][]][[][']default[']] = [0-9]*[0-9]/shares\'\]\[\'default\'\]  = ${pplns_shares}/g" global.inc.php 	
   sudo sed -i -e "s/reward['][]][[][']default[']] = [0-9]*[0-9]/reward\'\]\[\'default\'\]  = ${pps_reward}/g" global.inc.php
+  #sudo sed -i -e "s/coinurl[']] = ['a-z:\/]*[a-z.-]*[.a-z]*[a-z']/coinurl[']\] = '${coin_url}'/g" global.inc.php #issue?
+  #sudo sed -i -e "s/price['][]][[][']url[']] = ['][a-z:\/]*[a-z.-]*[.a-z]*[a-z][']/price'\]\['url'\] = '${price_url}'/g" global.inc.php  #issue
+  #sudo sed -i -e "s/price['][]][[][']target[']] = ['][\/a-z]*[a-z\/0-9]*[0-9\/a-z]*[a-z_]*[a-z\/]*[a-z']/price'\]\['target'\] = '${price_target}'/g" global.inc.php #issue?
   cd ${base_dir}
 }
 
@@ -350,8 +350,7 @@ git_mpos(){
   cd /var/www
   git clone git://github.com/MPOS/php-mpos.git MPOS
   cd MPOS
-  git checkout master
-  sudo chown -R www-data public/templates/compile public/templates/cache logs
+  git checkout master && sudo chown -R www-data public/templates/compile public/templates/cache logs
   mpos_sql
   cd ${base_dir}
   git_mpos_depends
@@ -372,7 +371,7 @@ mpos_exec(){
 
 coin_exec(){
   juju-log " + Installing "${coin_type}"d... "
-  git_${coin_type}d && auth && nohup ${coin_type}d -daemon
+  git_${coin_type}d && auth && nohup ${coin_type}d -conf=/home/ubuntu/.${coin_type}/${coin_type}.conf -daemon
   juju-log "   Finished installing "${coin_type}"d. "
 }
 
