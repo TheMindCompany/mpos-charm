@@ -2,3 +2,357 @@
 # config-changed occurs everytime a new configuration value is updated (juju set)
 # This applies to the juju set <service> <setting> feature for configuration and will
 # need special consideration for certain mpos default configuration parameters. 
+
+#!/bin/bash
+set -e
+
+juju-log "########################################################################"
+juju-log "##                                                                    ##"
+juju-log "## Install MPOS	                                                ##"
+juju-log "## Author: Brandon L. Clark <support@themindspot.com>                 ##"
+juju-log "##                                                                    ##"
+juju-log "## Description: This script will install the MPOS crypto currency     ##"
+juju-log "## pool server.   Learn more at https://github.com/MPOS/php-mpos.     ##"
+juju-log "##                                                                    ##"
+juju-log "########################################################################"
+
+##################################################################################
+# Get 'config.yaml' settings.
+##################################################################################
+
+alerts_email=`config-get alerts_email`
+mpos_user=`config-get mpos_user`
+mpos_pass=`config-get mpos_pass`
+rpc_port=`config-get rpc_port`
+rpc_timeout=`config-get rpc_timeout`
+coin_type=`config-get coin_type`
+host_id=`config-get host_id`
+db_name=`config-get db_name`
+db_user=`config-get db_user`
+db_pass=`config-get db_pass`
+pool_target=`config-get pool_target`
+block_hash=`config-get block_hash`
+base_dir=`config-get base_dir`
+db_port=`config-get db_port`
+coin_url=`config-get coin_url`
+coin_target=`config-get coin_target`
+coin_diff_change_target=`config-get coin_diff_change_target`
+payout_system=`config-get payout_system`
+db_host=`config-get db_host`
+rpc_host=`config-get rpc_host`
+stratum_url=`config-get stratum_url`
+stratum_port=`config-get stratum_port`
+price_url=`config-get price_url`
+price_target=`config-get price_target`
+price_currency=`config-get price_currency`
+currency_abv=`config-get currency_abv`
+ap_min=`config-get ap_min`
+ap_max=`config-get ap_max`
+pps_reward=`config-get pps_reward`
+pplns_shares=`config-get pplns_shares`
+host_id=`config-get host_id`
+
+##################################################################################
+# Get environment settings.
+##################################################################################
+
+RELEASE_VERSION=`lsb_release -sr`
+MACHINE_TYPE=`uname -m`
+MACHINE_ADDRESS='localhost'
+
+# SALTS generate random 32 character alphanumeric string (upper and lowercase)
+salt=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+salt2=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+salty=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+
+cd ${base_dir}
+
+##################################################################################
+# General crypto currency function.
+##################################################################################
+
+auth(){
+  juju-log " + Setting coin .conf file..."
+  mkdir /home/ubuntu/.${coin_type}
+  cat > /home/ubuntu/.${coin_type}/${coin_type}.conf <<EOF
+server=1
+daemon=1
+rpcport=${rpc_port}
+rpctimeout=${rpc_timeout}
+rpcuser=${mpos_user}
+rpcpassword=${mpos_pass}
+rpcallowip=127.0.0.1
+EOF
+  chmod go-rwx /home/ubuntu/.${coin_type}/${coin_type}.conf
+  juju-log "   Finishing user configuration."
+}
+
+#################################################################################
+# bitcoind setup functions
+#################################################################################
+
+build_bitcoind(){
+  cd bitcoin/src/
+  make -f makefile.unix USE_UPNP=- 
+  cp bitcoind /usr/bin/
+  cd ../..
+}
+
+git_bitcoind(){
+  juju-log " + Cloning bitcoind an building..."
+  git clone https://github.com/bitcoin/bitcoin.git
+  cd bitcoin
+  git checkout v0.8.6
+  cd ..
+  build_bitcoind
+  juju-log "   Finishing bitcoind!"
+}
+
+#################################################################################
+# dogecoind setup functions
+#################################################################################
+
+build_dogecoind(){
+  cd dogecoin/src/
+  make -f makefile.unix USE_UPNP=-
+  cp dogecoind /usr/bin/
+  cd ../..
+}
+
+git_dogecoind(){
+  juju-log " + Cloning dogecoind an building..."
+  git clone https://github.com/dogecoin/dogecoin.git
+  build_dogecoind
+  juju-log "   Finishing dogecoind!"
+}
+
+#################################################################################
+# litecoind setup functions
+#################################################################################
+
+build_litecoind(){
+  cd litecoin/src/
+  make -f makefile.unix USE_UPNP=-
+  cp litecoind /usr/bin/
+  cd ../..
+}
+
+git_litecoind(){
+  juju-log " + Cloning litecoind and building..."
+  git clone https://github.com/litecoin-project/litecoin.git
+  build_litecoind
+  juju-log "   Finishing litecoind!"
+}
+
+#################################################################################
+# Stratum setup functions
+#################################################################################
+
+init_stratum(){
+  cd stratum-mining
+  twistd -y launcher.tac
+  cd ..
+}
+
+config_stratum(){
+  ##Backup daemons will be added only if additional cryptocoin charms are spawned.(SO is the goal)
+  wallet=`sudo ${coin_type}d getnewaddress`
+  cp stratum-mining/conf/config_sample.py stratum-mining/conf/config.py
+  cd stratum-mining/conf/
+  sudo sed -i -e 's/set_valid_addresss_in_config!/'${wallet}'/g' config.py					
+  sudo sed -i -e "s/COINDAEMON_TRUSTED_PORT = [0-9]*[0-9]/COINDAEMON_TRUSTED_PORT = ${rpc_port}/g" config.py    
+  sudo sed -i -e 's/user/'${mpos_user}'/g' config.py					
+  sudo sed -i -e 's/somepassword/'${mpos_pass}'/g' config.py				 
+  if [ ${coin_type} == "bitcoin" ]; then						
+    sudo sed -i -e "s/COINDAEMON_ALGO = ['][a-z]*[a-z][']/COINDAEMON_ALGO = \'sha256d\'/g" config.py    
+  elif [ ${coin_type} == "litecoin" ]; then						 
+    sudo sed -i -e "s/COINDAEMON_ALGO = ['][a-z]*[a-z][']/COINDAEMON_ALGO = \'scrypt\'/g" config.py    
+  elif [ ${coin_type} == "dogecoin" ]; then						 
+    sudo sed -i -e "s/COINDAEMON_ALGO = ['][a-z]*[a-z][']/COINDAEMON_ALGO = \'scrypt\'/g" config.py    
+  fi
+  if [ ${coin_type} == "bitcoin" ]; then		
+    sudo sed -i -e "s/COINDAEMON_TX = ['][a-z]*[a-z][']/COINDAEMON_TX = \'yes\'/g" config.py
+  fi
+  sudo sed -i -e "s/DB_MYSQL_DBNAME = ['][a-z]*[a-z][']/DB_MYSQL_DBNAME = '${db_name}'/g" config.py
+  sudo sed -i -e "s/DB_MYSQL_USER = ['][a-z]*[a-z][']/DB_MYSQL_USER = '${db_user}'/g" config.py
+  sudo sed -i -e 's/\*\*empty\*\*/'${db_pass}'/g' config.py				
+  sudo sed -i -e 's/POOL_TARGET = 32/POOL_TARGET = '${pool_target}'/g' config.py
+  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${host_id}'/g" config.py 
+  sudo sed -i -e "s/DB_MYSQL_HOST = ['][a-z]*[a-z][']/DB_MYSQL_HOST = '${db_host}'/g" config.py 
+  sudo sed -i -e "s/PASSWORD_SALT = ['][a-z]*[a-z][']/PASSWORD_SALT = '${salt2}'/g" config.py 
+  sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" config.py 
+  sudo sed -i -e "s/LISTEN_SOCKET_TRANSPORT = [0-9]*[0-9]/LISTEN_SOCKET_TRANSPORT = ${stratum_port}/g" config.py 
+  sudo sed -i -e "s/DB_MYSQL_PORT = [0-9]*[0-9]/DB_MYSQL_PORT = ${db_port}/g" config.py 	
+  cd ../..
+}
+
+build_stratum_1(){
+  cd stratum-mining
+  git submodule init
+  git submodule update
+  ##TODO Direct install to proper coin_type
+  cd externals/litecoin_scrypt
+  sudo python setup.py install
+  cd ../../..
+}
+
+build_stratum_2(){
+  cd ${base_dir}/stratum
+  sudo python setup.py install
+  cd ..
+}
+
+git_stratum(){
+  git clone https://github.com/Crypto-Expert/stratum-mining.git
+  git clone https://github.com/ahmedbodi/stratum.git
+  ## Direct install to proper coin_type
+}
+
+stratum_exec(){
+  juju-log " + Cloning stratum repositories and building..."
+  git_stratum && build_stratum_1 && build_stratum_2
+  config_stratum && init_stratum 
+  finish_apt
+  juju-log "   Finishing MPOS!"
+}
+
+#################################################################################
+# Apache 2 conf
+#################################################################################
+
+apache2_add(){
+  cat > /etc/apache2/sites-enabled/000-default <<EOF
+<VirtualHost *:80>
+        ServerAdmin ${alerts_email}
+
+        DocumentRoot /var/www/${currency_abv}/public/
+        <Directory />
+                Options FollowSymLinks
+                AllowOverride None
+        </Directory>
+        <Directory /var/www/${currency_abv}/public/>
+                Options Indexes FollowSymLinks MultiViews
+                AllowOverride None
+                Order allow,deny
+                allow from all
+        </Directory>
+
+        ErrorLog /var/log/apache2/${currency_abv}-error.log
+
+        # Possible values include: debug, info, notice, warn, error, crit,
+        # alert, emerg.
+        LogLevel warn
+
+        CustomLog /var/log/apache2/${currency_abv}-access.log combined
+</VirtualHost>
+EOF
+  sudo service apache2 restart
+}
+
+#################################################################################
+# MPOS setup functions
+#################################################################################
+
+cron_mpos(){
+  cat > /etc/cron.allow <<EOF
+* * * * * /var/www/${currency_abv}/cronjobs/run-statistics.sh
+* * * * * /var/www/${currency_abv}/cronjobs/run-payout.sh
+* * * * * /var/www/${currency_abv}/cronjobs/run-maintenance.sh
+EOF
+}
+
+config_mpos(){
+  cd /var/www/${currency_abv}/public/include/config
+  sudo cp global.inc.dist.php global.inc.php
+  sudo sed -i -e "s/PLEASEMAKEMESOMETHINGRANDOM/${salt}/g" global.inc.php
+  sudo sed -i -e "s/THISSHOULDALSOBERRAANNDDOOM/${salty}/g" global.inc.php	
+  sudo sed -i -e "s/somepass/${db_pass}/g" global.inc.php 
+  sudo sed -i -e "s/someuser/${db_user}/g" global.inc.php 
+  sudo sed -i -e "s/db['][]][[][']name[']] = ['][a-z]*[a-z][']/db\'\]\[\'name\'\] = '${db_name}'/g" global.inc.php 
+  sudo sed -i -e "s/username[']] = ['][a-z]*[a-z][']/username\'\] = '${mpos_user}'/g" global.inc.php 
+  sudo sed -i -e "s/password[']] = ['][a-z]*[a-z][']/password\'\] = '${mpos_pass}'/g" global.inc.php 
+  sudo sed -i -e "s/db['][]][[][']host[']] = ['][a-z]*[a-z][']/db\'\]\[\'host\'\] = '${db_host}'/g" global.inc.php 
+  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${MACHINE_ADDRESS}\:${rpc_port}/g" global.inc.php 
+  sudo sed -i -e "s/db['][]][[][']port[']] = [0-9]*[0-9]/db\'\]\[\'port\'\]  = ${db_port}/g" global.inc.php 
+  sudo sed -i -e "s/coinname[']] = ['][A-Z]*[a-z]*[a-z][']/coinname\'\] = '${coin_type}'/g" global.inc.php 
+  sudo sed -i -e "s/stratumurl[']] = [']*['];/stratumurl\'\] = '${stratum_url}';/g" global.inc.php 
+  sudo sed -i -e "s/stratumport[']] = ['][0-9]*[0-9][']/stratumport\'\] = '${stratum_port}'/g" global.inc.php 	
+  sudo sed -i -e "s/price['][]][[][']currency[']] = ['][A-Z]*[A-Z][']/price\'\]\[\'currency\'\] = '${price_currency}'/g" global.inc.php 
+  sudo sed -i -e "s/config[[][']currency[']] = ['][A-Z]*[A-Z][']/config\[\'currency\'\] = '${currency_abv}'/g" global.inc.php 
+  sudo sed -i -e "s/ap_threshold['][]][[][']min[']] = [0-9]*[0-9]/ap_threshold\'\]\[\'min\'\]  = ${ap_min}/g" global.inc.php 
+  sudo sed -i -e "s/ap_threshold['][]][[][']max[']] = [0-9]*[0-9]/ap_threshold\'\]\[\'max\'\]  = ${ap_max}/g" global.inc.php 
+  sudo sed -i -e "s/cointarget[']] = ['][0-9]*[0-9][']/cointarget\'\] = '${coin_target}'/g" global.inc.php 
+  sudo sed -i -e "s/coindiffchangetarget[']] = [0-9]*[0-9]/coindiffchangetarget\'\]  = ${coin_diff_change_target}/g" global.inc.php 
+  sudo sed -i -e "s/payout_system[']] = ['][a-z]*[a-z][']/payout_system\'\] = '${payout_system}'/g" global.inc.php 
+  sudo sed -i -e "s/shares['][]][[][']default[']] = [0-9]*[0-9]/shares\'\]\[\'default\'\]  = ${pplns_shares}/g" global.inc.php 	
+  sudo sed -i -e "s/reward['][]][[][']default[']] = [0-9]*[0-9]/reward\'\]\[\'default\'\]  = ${pps_reward}/g" global.inc.php
+  #sudo sed -i -e "s/coinurl[']] = ['a-z:\/]*[a-z.-]*[.a-z]*[a-z']/coinurl[']\] = '${coin_url}'/g" global.inc.php #issue?
+  #sudo sed -i -e "s/price['][]][[][']url[']] = ['][a-z:\/]*[a-z.-]*[.a-z]*[a-z][']/price'\]\['url'\] = '${price_url}'/g" global.inc.php  #issue
+  #sudo sed -i -e "s/price['][]][[][']target[']] = ['][\/a-z]*[a-z\/0-9]*[0-9\/a-z]*[a-z_]*[a-z\/]*[a-z']/price'\]\['target'\] = '${price_target}'/g" global.inc.php #issue?
+  cd ${base_dir}
+}
+
+mpos_sql(){
+  juju-log " + Setting MPOS SQL structure..."
+  cd /var/www/${currency_abv}
+  sudo mysql -u root --password=${db_pass} ${db_name} < sql/000_base_structure.sql
+  sudo mysql -u root --password=${db_pass} ${db_name} < sql/013_tokentype_update.sql
+  cd ${base_dir}
+  juju-log "   Finishing SQL structure!"
+}
+
+git_mpos_depends(){
+  juju-log " + Setting up MPOS depends..."
+  if [ ${coin_type} == "litecoin" ]; then
+    git clone https://github.com/Tydus/litecoin_scrypt.git
+  elif [ ${coin_type} == "dogecoin" ]; then
+    git clone https://github.com/Tydus/litecoin_scrypt.git
+  #elif [ ${coin_type} == "bitcoin" ]; then 
+  fi
+  stratum_exec
+  juju-log "   Finishing MPOS depends setup!"
+}
+
+git_mpos(){
+  juju-log " + Cloning MPOS repository..."
+  cd /var/www
+  git clone git://github.com/MPOS/php-mpos.git ${currency_abv}
+  cd ${currency_abv}
+  git checkout master && sudo chown -R www-data public/templates/compile public/templates/cache logs
+  mpos_sql
+  cd ${base_dir}
+  git_mpos_depends
+  apache2ctl -k stop; sleep 2; sudo apache2ctl -k start
+  juju-log "   Finishing MPOS setup!"
+}
+
+mpos_exec(){
+  juju-log " + Preparing MPOS to initiate..."
+  git_mpos && config_mpos && cron_mpos && apache2_add
+  juju-log "   Finishing. MPOS is started!"
+}
+
+
+#################################################################################
+# Main function: start
+#################################################################################
+
+coin_exec(){
+  juju-log " + Installing "${coin_type}"d... "
+  git_${coin_type}d && auth && sudo nohup ${coin_type}d -conf=/home/ubuntu/.${coin_type}/${coin_type}.conf -daemon
+  juju-log "   Finished installing "${coin_type}"d. "
+}
+
+new_coin(){
+  coin_exec
+  mpos_exec
+}
+
+start_install() {
+  juju-log "Configuration was changed in MPOS suite, now making changes... "
+  [[ -x /usr/bin/${coin_type}d ]] || new_coin
+  juju-log "Successfully made MPOS changes. "
+}
+start_install
+
+open-port ${stratum_port}/TCP

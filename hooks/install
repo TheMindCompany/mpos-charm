@@ -226,10 +226,6 @@ init_stratum(){
   cd ..
 }
 
-edit_websocket(){
-  sudo sed -i -e "s/autobahn/autobahn\.twisted/g" /usr/local/lib/python2.7/dist-packages/stratum-0.2.13-py2.7.egg/stratum/websocket_transport.py
-}
-
 config_stratum(){
   ##Backup daemons will be added only if additional cryptocoin charms are spawned.(SO is the goal)
   wallet=`sudo ${coin_type}d getnewaddress`
@@ -287,7 +283,7 @@ git_stratum(){
 stratum_exec(){
   juju-log " + Cloning stratum repositories and building..."
   git_stratum && build_stratum_1 && build_stratum_2
-  config_stratum && init_stratum && edit_websocket
+  config_stratum && init_stratum
   finish_apt
   juju-log "   Finishing MPOS!"
 }
@@ -432,4 +428,4 @@ start_install
 
 open-port 80/TCP
 open-port 443/TCP
-open-port 3333/TCP
+open-port ${stratum_port}/TCP
