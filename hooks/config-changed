@@ -71,6 +71,10 @@ cd ${base_dir}
 # General crypto currency function.
 ##################################################################################
 
+make_db(){
+  sudo mysql -u root --password=${db_pass} --execute="create database ${db_name}"
+}
+
 auth(){
   juju-log " + Setting coin .conf file..."
   mkdir /home/ubuntu/.${coin_type}
@@ -149,7 +153,7 @@ git_litecoind(){
 #################################################################################
 
 init_stratum(){
-  cd stratum-mining
+  cd stratum-mining-${currency_abv}
   twistd -y launcher.tac
   cd ..
 }
@@ -157,8 +161,8 @@ init_stratum(){
 config_stratum(){
   ##Backup daemons will be added only if additional cryptocoin charms are spawned.(SO is the goal)
   wallet=`sudo ${coin_type}d getnewaddress`
-  cp stratum-mining/conf/config_sample.py stratum-mining/conf/config.py
-  cd stratum-mining/conf/
+  cp stratum-mining-${currency_abv}/conf/config_sample.py stratum-mining-${currency_abv}/conf/config.py
+  cd stratum-mining-${currency_abv}/conf/
   sudo sed -i -e 's/set_valid_addresss_in_config!/'${wallet}'/g' config.py					
   sudo sed -i -e "s/COINDAEMON_TRUSTED_PORT = [0-9]*[0-9]/COINDAEMON_TRUSTED_PORT = ${rpc_port}/g" config.py    
   sudo sed -i -e 's/user/'${mpos_user}'/g' config.py					
@@ -183,17 +187,17 @@ config_stratum(){
   sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" config.py 
   sudo sed -i -e "s/LISTEN_SOCKET_TRANSPORT = [0-9]*[0-9]/LISTEN_SOCKET_TRANSPORT = ${stratum_port}/g" config.py 
   sudo sed -i -e "s/DB_MYSQL_PORT = [0-9]*[0-9]/DB_MYSQL_PORT = ${db_port}/g" config.py 	
+  sudo sed -i -e "s/MEMCACHE_PREFIX = [\"]/MEMCACHE_PREFIX = \" = ${currency_abv}\_/g" config.py 	
+  sudo sed -i -e "s/MEMCACHE_PORT = [0-9]*[0-9]/MEMCACHE_PORT = ${memcache_port}/g" config.py 	
   cd ../..
 }
 
 build_stratum_1(){
-  cd stratum-mining
+  cd stratum-mining-${currency_abv}
   git submodule init
   git submodule update
   ##TODO Direct install to proper coin_type
-  cd externals/litecoin_scrypt
-  sudo python setup.py install
-  cd ../../..
+  cd ..
 }
 
 build_stratum_2(){
@@ -203,7 +207,7 @@ build_stratum_2(){
 }
 
 git_stratum(){
-  git clone https://github.com/Crypto-Expert/stratum-mining.git
+  git clone https://github.com/Crypto-Expert/stratum-mining.git stratum-mining-${currency_abv}
   git clone https://github.com/ahmedbodi/stratum.git
   ## Direct install to proper coin_type
 }
@@ -212,7 +216,6 @@ stratum_exec(){
   juju-log " + Cloning stratum repositories and building..."
   git_stratum && build_stratum_1 && build_stratum_2
   config_stratum && init_stratum 
-  finish_apt
   juju-log "   Finishing MPOS!"
 }
 
@@ -226,6 +229,7 @@ apache2_add(){
         ServerAdmin ${alerts_email}
 
         DocumentRoot /var/www/${currency_abv}/public/
+        ServerName www.mind-${currency_abv}.com
         <Directory />
                 Options FollowSymLinks
                 AllowOverride None
@@ -253,7 +257,16 @@ EOF
 # MPOS setup functions
 #################################################################################
 
+cron_mpos_edit(){
+  cd /var/www/${currency_abv}/cronjobs/
+  sudo sed -i -e "s/SUBFOLDER[\=\"][\"]/SUBFOLDER\=\"${currency_abv}\"/g" run-statistics.sh
+  sudo sed -i -e "s/SUBFOLDER[\=\"][\"]/SUBFOLDER\=\"${currency_abv}\"/g" run-payout.sh
+  sudo sed -i -e "s/SUBFOLDER[\=\"][\"]/SUBFOLDER\=\"${currency_abv}\"/g" run-maintenance.sh
+  cd ${base_dir}
+}
+
 cron_mpos(){
+  cron_mpos_edit
   cat > /etc/cron.allow <<EOF
 * * * * * /var/www/${currency_abv}/cronjobs/run-statistics.sh
 * * * * * /var/www/${currency_abv}/cronjobs/run-payout.sh
@@ -286,6 +299,8 @@ config_mpos(){
   sudo sed -i -e "s/payout_system[']] = ['][a-z]*[a-z][']/payout_system\'\] = '${payout_system}'/g" global.inc.php 
   sudo sed -i -e "s/shares['][]][[][']default[']] = [0-9]*[0-9]/shares\'\]\[\'default\'\]  = ${pplns_shares}/g" global.inc.php 	
   sudo sed -i -e "s/reward['][]][[][']default[']] = [0-9]*[0-9]/reward\'\]\[\'default\'\]  = ${pps_reward}/g" global.inc.php
+  sudo sed -i -e "s/keyprefix[']] = [']/keyprefix\'\]  = \'${currency_abv}\_/g" global.inc.php
+  sudo sed -i -e "s/memcache['][]][[][']port[']] = [0-9]*[0-9]/memcache\'\]\[\'port\'\] = ${memcache_port}/g" global.inc.php
   #sudo sed -i -e "s/coinurl[']] = ['a-z:\/]*[a-z.-]*[.a-z]*[a-z']/coinurl[']\] = '${coin_url}'/g" global.inc.php #issue?
   #sudo sed -i -e "s/price['][]][[][']url[']] = ['][a-z:\/]*[a-z.-]*[.a-z]*[a-z][']/price'\]\['url'\] = '${price_url}'/g" global.inc.php  #issue
   #sudo sed -i -e "s/price['][]][[][']target[']] = ['][\/a-z]*[a-z\/0-9]*[0-9\/a-z]*[a-z_]*[a-z\/]*[a-z']/price'\]\['target'\] = '${price_target}'/g" global.inc.php #issue?
@@ -344,6 +359,7 @@ coin_exec(){
 }
 
 new_coin(){
+  make_db
   coin_exec
   mpos_exec
 }
