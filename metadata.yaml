@@ -7,6 +7,8 @@ categories:
   - misc
 subordinate: false
 provides:
+  website:
+    interface: http
   provides-relation:
     interface: interface-name
 requires:
