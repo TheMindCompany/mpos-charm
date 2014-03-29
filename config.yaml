@@ -31,14 +31,6 @@ options:
     type: int
     default: 30
     description:
-  pool_wallet:
-    type: string
-    default: "Ld3oYrJf8GP3cJ9AHiWoRZs4JGKgMKF5MN"
-    description: Where you want the pool profits to be sent.
-  cpu_cores:
-    type: int
-    default: 1
-    description: This is for running parrelel task to setup.
   alerts_email:
     type: string
     default: "user@support.com"
@@ -123,3 +115,7 @@ options:
     type: int
     default: 50
     description: 
+  host_id:
+    type: string
+    default: "localhost"
+    description:

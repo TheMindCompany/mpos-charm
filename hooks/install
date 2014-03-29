@@ -20,8 +20,6 @@ mpos_user=`config-get mpos_user`
 mpos_pass=`config-get mpos_pass`
 rpc_port=`config-get rpc_port`
 rpc_timeout=`config-get rpc_timeout`
-pool_wallet=`config-get pool_wallet`
-cpu_cores=`config-get cpu_cores`
 coin_type=`config-get coin_type`
 host_id=`config-get host_id`
 db_name=`config-get db_name`
@@ -47,6 +45,7 @@ ap_min=`config-get ap_min`
 ap_max=`config-get ap_max`
 pps_reward=`config-get pps_reward`
 pplns_shares=`config-get pplns_shares`
+host_id=`config-get host_id`
 
 ##################################################################################
 # Get environment settings.
@@ -54,7 +53,6 @@ pplns_shares=`config-get pplns_shares`
 
 RELEASE_VERSION=`lsb_release -sr`
 MACHINE_TYPE=`uname -m`
-host_id=''
 MACHINE_ADDRESS='localhost'
 
 # SALTS generate random 32 character alphanumeric string (upper and lowercase)
@@ -113,22 +111,30 @@ make_db(){
   sudo mysql -u root --password=${db_pass} --execute="create database ${db_name}"
 }
 
+build_tools(){
+  apt-get -y install build-essential libcap2-bin git-core automake autoconf curl python-software-properties pkg-config 
+}
+
+lib_tools(){
+  apt-get -y install libcurl4-gnutls-dev yasm libncurses5-devlibtool libmemcached-dev libcrypto++-dev 
+}
+
+db_tools(){
+  apt-get -y install sqlite3 postgresql libssl-dev libminiupnpc-dev libdb4.8:i386 libstdc++6:i386 libstdc++6 libdb5.1++-dev libqrencode-dev libminiupnpc-dev libcurl4-openssl-dev libdb5.1-dev 
+}
+
+py_tools(){
+  apt-get -y install python-zope.interface python-twisted python-twisted-web python-mysqldb python-dev python-setuptools python-memcache python-simplejson postfix memcached python-pylibmc
+}
+
+boost_tools(){
+  apt-get -y install libboost1.46-dev libboost-graph1.46-dev libboost-graph-dev libboost-graph-parallel1.46-dev libboost-graph-parallel-dev libboost-iostreams1.46-dev libboost-iostreams-dev libboost-math1.46-dev libboost-math-dev libboost-mpi1.46-dev libboost-mpi-dev libboost-mpi-python-dev libboost-program-options1.46-dev libboost-program-options-dev libboost-python1.46-dev libboost-python-dev libboost-regex1.46-dev libboost-regex-dev libboost-serialization1.46-dev libboost-serialization-dev libboost-signals1.46-dev libboost-signals-dev libboost-system1.46-dev libboost-system-dev libboost-test1.46-dev libboost-test-dev libboost-thread1.46-dev libboost-thread-dev libboost-wave1.46-dev libboost-wave-dev libboost-filesystem1.46-dev libboost-filesystem-dev libboost-date-time1.46-dev libboost-date-time-dev libboost-dev libboost-all-dev 
+}
+
 base_dev(){
   juju-log " + Installing needed development packages... "
-  apt-get -y install build-essential libcap2-bin git-core automake autoconf curl python-software-properties 
-  finish_apt
-  apt-get -y install libcurl4-gnutls-dev yasm libncurses5-dev pkg-config libtool libmemcached-dev libcrypto++-dev 
-  finish_apt
-  apt-get -y install python-zope.interface python-twisted python-twisted-web python-mysqldb python-dev python-setuptools python-memcache python-simplejson postfix memcached python-pylibmc
-  finish_apt
-  apt-get -y install sqlite3 postgresql libssl-dev libminiupnpc-dev libdb4.8:i386 libstdc++6:i386 libstdc++6 libdb5.1++-dev libqrencode-dev libminiupnpc-dev libcurl4-openssl-dev libdb5.1-dev 
-  finish_apt 
-  apt-get -y install libboost1.46-dev libboost-graph1.46-dev libboost-graph-dev libboost-graph-parallel1.46-dev libboost-graph-parallel-dev libboost-iostreams1.46-dev libboost-iostreams-dev libboost-math1.46-dev libboost-math-dev libboost-mpi1.46-dev libboost-mpi-dev libboost-mpi-python-dev libboost-program-options1.46-dev libboost-program-options-dev libboost-python1.46-dev libboost-python-dev libboost-regex1.46-dev libboost-regex-dev libboost-serialization1.46-dev libboost-serialization-dev libboost-signals1.46-dev libboost-signals-dev libboost-system1.46-dev libboost-system-dev libboost-test1.46-dev libboost-test-dev libboost-thread1.46-dev libboost-thread-dev libboost-wave1.46-dev libboost-wave-dev libboost-filesystem1.46-dev libboost-filesystem-dev libboost-date-time1.46-dev libboost-date-time-dev libboost-dev libboost-all-dev 
-  finish_apt
-  lamp_package
-  easy_package
-  finish_apt
-  make_db
+  build_tools && lib_tools && db_tools && py_tools && boost_tools && easy_package
+  lamp_package && make_db
   juju-log "   Finished installing development packages. "
 
 }
@@ -142,10 +148,12 @@ auth(){
   mkdir /home/ubuntu/.${coin_type}
   cat > /home/ubuntu/.${coin_type}/${coin_type}.conf <<EOF
 server=1
+daemon=1
 rpcport=${rpc_port}
 rpctimeout=${rpc_timeout}
 rpcuser=${mpos_user}
 rpcpassword=${mpos_pass}
+rpcallowip=127.0.0.1
 EOF
   chmod go-rwx /home/ubuntu/.${coin_type}/${coin_type}.conf
   juju-log "   Finishing user configuration."
@@ -224,9 +232,10 @@ edit_websocket(){
 
 config_stratum(){
   ##Backup daemons will be added only if additional cryptocoin charms are spawned.(SO is the goal)
+  wallet=`sudo ${coin_type}d getnewaddress`
   cp stratum-mining/conf/config_sample.py stratum-mining/conf/config.py
   cd stratum-mining/conf/
-  sudo sed -i -e 's/set_valid_addresss_in_config!/'${pool_wallet}'/g' config.py					
+  sudo sed -i -e 's/set_valid_addresss_in_config!/'${wallet}'/g' config.py					
   sudo sed -i -e "s/COINDAEMON_TRUSTED_PORT = [0-9]*[0-9]/COINDAEMON_TRUSTED_PORT = ${rpc_port}/g" config.py    
   sudo sed -i -e 's/user/'${mpos_user}'/g' config.py					
   sudo sed -i -e 's/somepassword/'${mpos_pass}'/g' config.py				 
@@ -264,9 +273,9 @@ build_stratum_1(){
 }
 
 build_stratum_2(){
-  cd stratum-mining/externals/stratum
+  cd ${base_dir}/stratum
   sudo python setup.py install
-  cd ../../..
+  cd ..
 }
 
 git_stratum(){
@@ -284,17 +293,53 @@ stratum_exec(){
 }
 
 #################################################################################
+# Apache 2 conf
+#################################################################################
+
+apache2_add(){
+  sudo rm -r /etc/apache2/sites-enabled/000-default
+  cat > /etc/apache2/sites-enabled/000-default <<EOF
+<VirtualHost *:80>
+        ServerAdmin ${alerts_email}
+
+        DocumentRoot /var/www/${currency_abv}/public/
+        <Directory />
+                Options FollowSymLinks
+                AllowOverride None
+        </Directory>
+        <Directory /var/www/${currency_abv}/public/>
+                Options Indexes FollowSymLinks MultiViews
+                AllowOverride None
+                Order allow,deny
+                allow from all
+        </Directory>
+
+        ErrorLog /var/log/apache2/${currency_abv}-error.log
+
+        # Possible values include: debug, info, notice, warn, error, crit,
+        # alert, emerg.
+        LogLevel warn
+
+        CustomLog /var/log/apache2/${currency_abv}-access.log combined
+</VirtualHost>
+EOF
+  sudo service apache2 restart
+}
+
+#################################################################################
 # MPOS setup functions
 #################################################################################
 
 cron_mpos(){
-  cd /var/www/MPOS/cronjobs
-  ./run-crons.sh
-  cd ${base_dir}
+  cat > /etc/cron.allow <<EOF
+* * * * * /var/www/${currency_abv}/cronjobs/run-statistics.sh
+* * * * * /var/www/${currency_abv}/cronjobs/run-payout.sh
+* * * * * /var/www/${currency_abv}/cronjobs/run-maintenance.sh
+EOF
 }
 
 config_mpos(){
-  cd /var/www/MPOS/public/include/config
+  cd /var/www/${currency_abv}/public/include/config
   sudo cp global.inc.dist.php global.inc.php
   sudo sed -i -e "s/PLEASEMAKEMESOMETHINGRANDOM/${salt}/g" global.inc.php
   sudo sed -i -e "s/THISSHOULDALSOBERRAANNDDOOM/${salty}/g" global.inc.php	
@@ -326,7 +371,7 @@ config_mpos(){
 
 mpos_sql(){
   juju-log " + Setting MPOS SQL structure..."
-  cd /var/www/MPOS
+  cd /var/www/${currency_abv}
   sudo mysql -u root --password=${db_pass} ${db_name} < sql/000_base_structure.sql
   sudo mysql -u root --password=${db_pass} ${db_name} < sql/013_tokentype_update.sql
   cd ${base_dir}
@@ -348,8 +393,8 @@ git_mpos_depends(){
 git_mpos(){
   juju-log " + Cloning MPOS repository..."
   cd /var/www
-  git clone git://github.com/MPOS/php-mpos.git MPOS
-  cd MPOS
+  git clone git://github.com/MPOS/php-mpos.git ${currency_abv}
+  cd ${currency_abv}
   git checkout master && sudo chown -R www-data public/templates/compile public/templates/cache logs
   mpos_sql
   cd ${base_dir}
@@ -360,7 +405,7 @@ git_mpos(){
 
 mpos_exec(){
   juju-log " + Preparing MPOS to initiate..."
-  git_mpos && config_mpos
+  git_mpos && config_mpos && cron_mpos && apache2_add
   juju-log "   Finishing. MPOS is started!"
 }
 
@@ -371,7 +416,7 @@ mpos_exec(){
 
 coin_exec(){
   juju-log " + Installing "${coin_type}"d... "
-  git_${coin_type}d && auth && nohup ${coin_type}d -conf=/home/ubuntu/.${coin_type}/${coin_type}.conf -daemon
+  git_${coin_type}d && auth && sudo nohup ${coin_type}d -conf=/home/ubuntu/.${coin_type}/${coin_type}.conf -daemon
   juju-log "   Finished installing "${coin_type}"d. "
 }
 
@@ -388,4 +433,3 @@ start_install
 open-port 80/TCP
 open-port 443/TCP
 open-port 3333/TCP
-open-port ${rpc_port}/TCP
