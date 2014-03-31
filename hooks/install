@@ -46,6 +46,7 @@ ap_max=`config-get ap_max`
 pps_reward=`config-get pps_reward`
 pplns_shares=`config-get pplns_shares`
 host_id=`config-get host_id`
+memcache_port=`config-get memcache_port`
 
 ##################################################################################
 # Get environment settings.
@@ -53,7 +54,8 @@ host_id=`config-get host_id`
 
 RELEASE_VERSION=`lsb_release -sr`
 MACHINE_TYPE=`uname -m`
-MACHINE_ADDRESS='localhost'
+PRIVATE_MACHINE_ADDRESS=`unit-get private-address`
+PUBLIC_MACHINE_ADDRESS=`unit-get public-address`
 
 # SALTS generate random 32 character alphanumeric string (upper and lowercase)
 salt=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
@@ -84,18 +86,17 @@ ppa_php(){
 
 get_mysql(){
   apt-get -y install mysql-server mysql-client
+  finish_apt
 }
 
 get_apache2(){
   apt-get -y install apache2 libapache2-mod-php5
+  finish_apt
 }
 
 lamp_package(){
-  finish_apt
   debconf-set-selections <<< 'mysql-server mysql-server/root_password password '${db_pass}''
   debconf-set-selections <<< 'mysql-server mysql-server/root_password_again password '${db_pass}''
-  #apt-get -y install lamp-server^ 
-  #apt-get -y install php5-mysqlnd
   get_apache2 && get_mysql && ppa_php
 }
 
@@ -112,23 +113,29 @@ make_db(){
 }
 
 build_tools(){
-  apt-get -y install build-essential libcap2-bin git-core automake autoconf curl python-software-properties pkg-config 
+  #debconf-set-selections <<< 'postfix postfix/select '
+  apt-get -y install build-essential libcap2-bin git-core automake autoconf curl python-software-properties
+  finish_apt
 }
 
 lib_tools(){
-  apt-get -y install libcurl4-gnutls-dev yasm libncurses5-devlibtool libmemcached-dev libcrypto++-dev 
+  apt-get -y install libcurl4-gnutls-dev pkg-config yasm libncurses5-devlibtool libmemcached-dev libcrypto++-dev 
+  finish_apt
 }
 
 db_tools(){
-  apt-get -y install sqlite3 postgresql libssl-dev libminiupnpc-dev libdb4.8:i386 libstdc++6:i386 libstdc++6 libdb5.1++-dev libqrencode-dev libminiupnpc-dev libcurl4-openssl-dev libdb5.1-dev 
+  apt-get -y install sqlite3 postgresql libssl-dev libminiupnpc-dev libdb4.8:i386 libstdc++6:i386 libstdc++6 libdb5.1++-dev libqrencode-dev libminiupnpc-dev libcurl4-openssl-dev libdb5.1-dev  
+  finish_apt
 }
 
 py_tools(){
   apt-get -y install python-zope.interface python-twisted python-twisted-web python-mysqldb python-dev python-setuptools python-memcache python-simplejson postfix memcached python-pylibmc
+  finish_apt
 }
 
 boost_tools(){
   apt-get -y install libboost1.46-dev libboost-graph1.46-dev libboost-graph-dev libboost-graph-parallel1.46-dev libboost-graph-parallel-dev libboost-iostreams1.46-dev libboost-iostreams-dev libboost-math1.46-dev libboost-math-dev libboost-mpi1.46-dev libboost-mpi-dev libboost-mpi-python-dev libboost-program-options1.46-dev libboost-program-options-dev libboost-python1.46-dev libboost-python-dev libboost-regex1.46-dev libboost-regex-dev libboost-serialization1.46-dev libboost-serialization-dev libboost-signals1.46-dev libboost-signals-dev libboost-system1.46-dev libboost-system-dev libboost-test1.46-dev libboost-test-dev libboost-thread1.46-dev libboost-thread-dev libboost-wave1.46-dev libboost-wave-dev libboost-filesystem1.46-dev libboost-filesystem-dev libboost-date-time1.46-dev libboost-date-time-dev libboost-dev libboost-all-dev 
+  finish_apt
 }
 
 base_dev(){
@@ -156,6 +163,9 @@ rpcpassword=${mpos_pass}
 rpcallowip=127.0.0.1
 EOF
   chmod go-rwx /home/ubuntu/.${coin_type}/${coin_type}.conf
+  sleep 10s
+  sudo -u ubuntu -i sudo nohup ${coin_type}d -daemon
+  sleep 10s
   juju-log "   Finishing user configuration."
 }
 
@@ -221,17 +231,17 @@ git_litecoind(){
 #################################################################################
 
 init_stratum(){
-  cd stratum-mining-${currency_abv}
+  cd ${base_dir}/stratum-mining-${currency_abv}
   twistd -y launcher.tac
   cd ..
 }
 
 config_stratum(){
+  juju-log " + Configuring CONFIG.PY."
   ##Backup daemons will be added only if additional cryptocoin charms are spawned.(SO is the goal)
-  wallet=`sudo ${coin_type}d getnewaddress`
-  cp stratum-mining-${currency_abv}/conf/config_sample.py stratum-mining-${currency_abv}/conf/config.py
-  cd stratum-mining-${currency_abv}/conf/
-  sudo sed -i -e 's/set_valid_addresss_in_config!/'${wallet}'/g' config.py					
+  wallet=`sudo -u ubuntu -i sudo ${coin_type}d getnewaddress`
+  cp ${base_dir}/stratum-mining-${currency_abv}/conf/config_sample.py ${base_dir}/stratum-mining-${currency_abv}/conf/config.py
+  cd ${base_dir}/stratum-mining-${currency_abv}/conf/				
   sudo sed -i -e "s/COINDAEMON_TRUSTED_PORT = [0-9]*[0-9]/COINDAEMON_TRUSTED_PORT = ${rpc_port}/g" config.py    
   sudo sed -i -e 's/user/'${mpos_user}'/g' config.py					
   sudo sed -i -e 's/somepassword/'${mpos_pass}'/g' config.py				 
@@ -255,13 +265,16 @@ config_stratum(){
   sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" config.py 
   sudo sed -i -e "s/LISTEN_SOCKET_TRANSPORT = [0-9]*[0-9]/LISTEN_SOCKET_TRANSPORT = ${stratum_port}/g" config.py 
   sudo sed -i -e "s/DB_MYSQL_PORT = [0-9]*[0-9]/DB_MYSQL_PORT = ${db_port}/g" config.py 	
-  sudo sed -i -e "s/MEMCACHE_PREFIX = [\"]/MEMCACHE_PREFIX = \" = ${currency_abv}\_/g" config.py 	
-  sudo sed -i -e "s/MEMCACHE_PORT = [0-9]*[0-9]/MEMCACHE_PORT = ${memcache_port}/g" config.py 		
+  sudo sed -i -e "s/MEMCACHE_PREFIX = [\"]/MEMCACHE_PREFIX = \"${currency_abv}\_/g" config.py 	
+  sudo sed -i -e "s/MEMCACHE_PORT = [0-9]*[0-9]/MEMCACHE_PORT = ${memcache_port}/g" config.py 
+  sudo sed -i -e "s/PASSWORD_SALT = ['][a-z_]*[_a-z][']/PASSWORD_SALT = '${salt2}'/g" config.py	
+  sudo sed -i -e 's/set_valid_addresss_in_config!/'${wallet}'/g' config.py	
   cd ../..
+  juju-log "   Finished configuring CONFIG.PY."
 }
 
 build_stratum_1(){
-  cd stratum-mining-${currency_abv}
+  cd ${base_dir}/stratum-mining-${currency_abv}
   git submodule init
   git submodule update
   ##TODO Direct install to proper coin_type
@@ -277,6 +290,7 @@ build_stratum_2(){
 }
 
 git_stratum(){
+  cd ${base_dir}
   git clone https://github.com/Crypto-Expert/stratum-mining.git stratum-mining-${currency_abv}
   git clone https://github.com/ahmedbodi/stratum.git
   ## Direct install to proper coin_type
@@ -295,13 +309,16 @@ stratum_exec(){
 #################################################################################
 
 apache2_add(){
+  juju-log " + Adding MPOS instance to apache2."
   sudo rm -r /etc/apache2/sites-enabled/000-default
   cat > /etc/apache2/sites-enabled/000-default <<EOF
 <VirtualHost *:80>
         ServerAdmin ${alerts_email}
 
-        DocumentRoot /var/www/${currency_abv}/public/
         ServerName www.mind-${currency_abv}.com
+	ServerAlias mind-${currency_abv}.com
+
+        DocumentRoot /var/www/${currency_abv}/public/
         <Directory />
                 Options FollowSymLinks
                 AllowOverride None
@@ -323,30 +340,23 @@ apache2_add(){
 </VirtualHost>
 EOF
   sudo service apache2 restart
+  juju-log "   Finished adding MPOS instance to apache2"
 }
 
 #################################################################################
 # MPOS setup functions
 #################################################################################
 
-cron_mpos_edit(){
-  cd /var/www/${currency_abv}/cronjobs/
-  sudo sed -i -e "s/SUBFOLDER[\=\"][\"]/SUBFOLDER\=\"${currency_abv}\"/g" run-statistics.sh
-  sudo sed -i -e "s/SUBFOLDER[\=\"][\"]/SUBFOLDER\=\"${currency_abv}\"/g" run-payout.sh
-  sudo sed -i -e "s/SUBFOLDER[\=\"][\"]/SUBFOLDER\=\"${currency_abv}\"/g" run-maintenance.sh
-  cd ${base_dir}
-}
-
 cron_mpos(){
-  cron_mpos_edit
-  cat > /etc/cron.allow <<EOF
-* * * * * /var/www/${currency_abv}/cronjobs/run-statistics.sh
-* * * * * /var/www/${currency_abv}/cronjobs/run-payout.sh
-* * * * * /var/www/${currency_abv}/cronjobs/run-maintenance.sh
-EOF
+  juju-log " + Setting cronjobs schedule."
+  (crontab -u ubuntu -l; echo "* * * * * /var/www/${currency_abv}/cronjobs/run-statistics.sh -d ${currency_abv}" ) | crontab -u ubuntu -
+  (crontab -u ubuntu -l; echo "* * * * * /var/www/${currency_abv}/cronjobs/run-payout.sh -d ${currency_abv}" ) | crontab -u ubuntu -
+  (crontab -u ubuntu -l; echo "* * * * * /var/www/${currency_abv}/cronjobs/run-maintenance.sh -d ${currency_abv}" ) | crontab -u ubuntu -
+  juju-log "   Finished setting cronjobs schedule."
 }
 
 config_mpos(){
+  juju-log " + Configuring GLOBAL.INC.PHP."
   cd /var/www/${currency_abv}/public/include/config
   sudo cp global.inc.dist.php global.inc.php
   sudo sed -i -e "s/PLEASEMAKEMESOMETHINGRANDOM/${salt}/g" global.inc.php
@@ -357,7 +367,7 @@ config_mpos(){
   sudo sed -i -e "s/username[']] = ['][a-z]*[a-z][']/username\'\] = '${mpos_user}'/g" global.inc.php 
   sudo sed -i -e "s/password[']] = ['][a-z]*[a-z][']/password\'\] = '${mpos_pass}'/g" global.inc.php 
   sudo sed -i -e "s/db['][]][[][']host[']] = ['][a-z]*[a-z][']/db\'\]\[\'host\'\] = '${db_host}'/g" global.inc.php 
-  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${MACHINE_ADDRESS}\:${rpc_port}/g" global.inc.php 
+  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${host_id}\:${rpc_port}/g" global.inc.php 
   sudo sed -i -e "s/db['][]][[][']port[']] = [0-9]*[0-9]/db\'\]\[\'port\'\]  = ${db_port}/g" global.inc.php 
   sudo sed -i -e "s/coinname[']] = ['][A-Z]*[a-z]*[a-z][']/coinname\'\] = '${coin_type}'/g" global.inc.php 
   sudo sed -i -e "s/stratumurl[']] = [']*['];/stratumurl\'\] = '${stratum_url}';/g" global.inc.php 
@@ -377,13 +387,14 @@ config_mpos(){
   #sudo sed -i -e "s/price['][]][[][']url[']] = ['][a-z:\/]*[a-z.-]*[.a-z]*[a-z][']/price'\]\['url'\] = '${price_url}'/g" global.inc.php  #issue
   #sudo sed -i -e "s/price['][]][[][']target[']] = ['][\/a-z]*[a-z\/0-9]*[0-9\/a-z]*[a-z_]*[a-z\/]*[a-z']/price'\]\['target'\] = '${price_target}'/g" global.inc.php #issue?
   cd ${base_dir}
+  juju-log "   Finished configuring GLOBAL.INC.PHP."
 }
 
 mpos_sql(){
   juju-log " + Setting MPOS SQL structure..."
   cd /var/www/${currency_abv}
   sudo mysql -u root --password=${db_pass} ${db_name} < sql/000_base_structure.sql
-  sudo mysql -u root --password=${db_pass} ${db_name} < sql/013_tokentype_update.sql
+  #sudo mysql -u root --password=${db_pass} ${db_name} < sql/013_tokentype_update.sql  !!Depreciated
   cd ${base_dir}
   juju-log "   Finishing SQL structure!"
 }
@@ -426,7 +437,7 @@ mpos_exec(){
 
 coin_exec(){
   juju-log " + Installing "${coin_type}"d... "
-  git_${coin_type}d && auth && sudo nohup ${coin_type}d -conf=/home/ubuntu/.${coin_type}/${coin_type}.conf -daemon
+  git_${coin_type}d && auth
   juju-log "   Finished installing "${coin_type}"d. "
 }
 

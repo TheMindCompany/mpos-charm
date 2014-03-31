@@ -2,5 +2,5 @@
 
 coin_type=`config-get coin_type`
 
-sudo service apache2 stop
-sudo ${coin_type}d stop
+service apache2 stop
+[[ -x /usr/bin/${coin_type}d ]] || sudo ${coin_type}d stop

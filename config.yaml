@@ -119,3 +119,8 @@ options:
     type: string
     default: "localhost"
     description:
+  memcache_port:
+    type: int
+    default: 11211
+    description:
+

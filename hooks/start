@@ -1,14 +1,15 @@
 #!/bin/bash
 
 coin_type=`config-get coin_type`
+currency_abv=`config-get currency_abv`
 base_dir=`config-get base_dir`
 
 cd ${base_dir}
 
 service apache2 start || service apache2 restart
 
-sudo nohup ${coin_type}d -conf=/home/ubuntu/.${coin_type}/${coin_type}.conf -daemon
+[[ -x /usr/bin/${coin_type}d ]] || sudo -u ubuntu -i sudo nohup ${coin_type}d -daemon
 
-cd stratum-mining
+cd stratum-mining-${currency_abv}
 sudo twistd -y launcher.tac
 cd ..

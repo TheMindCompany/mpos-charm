@@ -13,7 +13,7 @@ options:
     description: This is for rpc user password configuration.
   db_name:
     type: string
-    default: "mind"
+    default: "doge"
     description: 
   db_user:
     type: string
@@ -25,20 +25,12 @@ options:
     description: 
   rpc_port:
     type: int
-    default: 19323
+    default: 19324
     description: 
   rpc_timeout:
     type: int
     default: 30
     description: 
-  pool_wallet:
-    type: string
-    default: "DU3NrH5D285x9ajoFux4GRK53HeVmxbfdP"
-    description: Where you want the pool profits to be sent.
-  cpu_cores:
-    type: int
-    default: 1
-    description: This is for running parrelel task to setup.  
   alerts_email:
     type: string
     default: "user@support.com"
@@ -77,19 +69,19 @@ options:
     description: 
   db_host:
     type: string
-    default: "54.215.230.152"
+    default: "localhost"
     description: 
   rpc_host:
     type: string
-    default: "54.215.230.152"
+    default: "localhost"
     description: 
   stratum_url:
     type: string
-    default: "54.215.230.152"
+    default: "localhost"
     description: 
   stratum_port:
     type: int
-    default: 3333
+    default: 3332
     description: 
   price_url:
     type: string
@@ -123,3 +115,11 @@ options:
     type: int
     default: 50
     description: 
+  host_id:
+    type: string
+    default: "localhost"
+    description:
+  memcache_port:
+    type: int
+    default: 11212
+    description:
