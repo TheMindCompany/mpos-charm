@@ -56,6 +56,7 @@ RELEASE_VERSION=`lsb_release -sr`
 MACHINE_TYPE=`uname -m`
 PRIVATE_MACHINE_ADDRESS=`unit-get private-address`
 PUBLIC_MACHINE_ADDRESS=`unit-get public-address`
+EXTERNAL_IP=`nslookup ${PUBLIC_MACHINE_ADDRESS}`
 
 # SALTS generate random 32 character alphanumeric string (upper and lowercase)
 salt=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
@@ -259,7 +260,7 @@ config_stratum(){
   sudo sed -i -e "s/DB_MYSQL_USER = ['][a-z]*[a-z][']/DB_MYSQL_USER = '${db_user}'/g" config.py
   sudo sed -i -e 's/\*\*empty\*\*/'${db_pass}'/g' config.py				
   sudo sed -i -e 's/POOL_TARGET = 32/POOL_TARGET = '${pool_target}'/g' config.py
-  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${host_id}'/g" config.py 
+  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${EXTERNAL_IP}'/g" config.py 
   sudo sed -i -e "s/DB_MYSQL_HOST = ['][a-z]*[a-z][']/DB_MYSQL_HOST = '${db_host}'/g" config.py 
   sudo sed -i -e "s/PASSWORD_SALT = ['][a-z]*[a-z][']/PASSWORD_SALT = '${salt2}'/g" config.py 
   sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" config.py 
@@ -370,7 +371,7 @@ config_mpos(){
   sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${host_id}\:${rpc_port}/g" global.inc.php 
   sudo sed -i -e "s/db['][]][[][']port[']] = [0-9]*[0-9]/db\'\]\[\'port\'\]  = ${db_port}/g" global.inc.php 
   sudo sed -i -e "s/coinname[']] = ['][A-Z]*[a-z]*[a-z][']/coinname\'\] = '${coin_type}'/g" global.inc.php 
-  sudo sed -i -e "s/stratumurl[']] = [']*['];/stratumurl\'\] = '${stratum_url}';/g" global.inc.php 
+  sudo sed -i -e "s/stratumurl[']] = [']*['];/stratumurl\'\] = '${EXTERNAL_IP}';/g" global.inc.php 
   sudo sed -i -e "s/stratumport[']] = ['][0-9]*[0-9][']/stratumport\'\] = '${stratum_port}'/g" global.inc.php 	
   sudo sed -i -e "s/price['][]][[][']currency[']] = ['][A-Z]*[A-Z][']/price\'\]\[\'currency\'\] = '${price_currency}'/g" global.inc.php 
   sudo sed -i -e "s/config[[][']currency[']] = ['][A-Z]*[A-Z][']/config\[\'currency\'\] = '${currency_abv}'/g" global.inc.php 

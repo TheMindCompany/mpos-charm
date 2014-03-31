@@ -1,9 +1,4 @@
 #!/bin/bash
-# config-changed occurs everytime a new configuration value is updated (juju set)
-# This applies to the juju set <service> <setting> feature for configuration and will
-# need special consideration for certain mpos default configuration parameters. 
-
-#!/bin/bash
 set -e
 
 juju-log "########################################################################"
@@ -61,6 +56,7 @@ RELEASE_VERSION=`lsb_release -sr`
 MACHINE_TYPE=`uname -m`
 PRIVATE_MACHINE_ADDRESS=`unit-get private-address`
 PUBLIC_MACHINE_ADDRESS=`unit-get public-address`
+EXTERNAL_IP=`nslookup ${PUBLIC_MACHINE_ADDRESS}`
 
 # SALTS generate random 32 character alphanumeric string (upper and lowercase)
 salt=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
@@ -185,7 +181,7 @@ config_stratum(){
   sudo sed -i -e "s/DB_MYSQL_USER = ['][a-z]*[a-z][']/DB_MYSQL_USER = '${db_user}'/g" config.py
   sudo sed -i -e 's/\*\*empty\*\*/'${db_pass}'/g' config.py				
   sudo sed -i -e 's/POOL_TARGET = 32/POOL_TARGET = '${pool_target}'/g' config.py
-  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${PUBLIC_MACHINE_ID}'/g" config.py 
+  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${EXTERNAL_IP}'/g" config.py 
   sudo sed -i -e "s/DB_MYSQL_HOST = ['][a-z]*[a-z][']/DB_MYSQL_HOST = '${db_host}'/g" config.py 
   sudo sed -i -e "s/PASSWORD_SALT = ['][a-z]*[a-z][']/PASSWORD_SALT = '${salt2}'/g" config.py 
   sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" config.py 
