@@ -58,6 +58,10 @@ PRIVATE_MACHINE_ADDRESS=`unit-get private-address`
 PUBLIC_MACHINE_ADDRESS=`unit-get public-address`
 EXTERNAL_IP=`nslookup ${PUBLIC_MACHINE_ADDRESS}`
 
+USER="`id -un`"
+MAIL="/var/spool/mail/$USER"
+HOSTNAME=`/bin/hostname`
+
 # SALTS generate random 32 character alphanumeric string (upper and lowercase)
 salt=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 salt2=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
@@ -179,6 +183,7 @@ build_bitcoind(){
   make -f makefile.unix USE_UPNP=- 
   cp bitcoind /usr/bin/
   cd ../..
+  rm -rf bitcoin
 }
 
 git_bitcoind(){
@@ -198,8 +203,9 @@ git_bitcoind(){
 build_dogecoind(){
   cd dogecoin/src/
   make -f makefile.unix USE_UPNP=-
-  cp dogecoind /usr/bin/
+  cp dogecoind /usr/bin/ 
   cd ../..
+  rm -rf dogecoin
 }
 
 git_dogecoind(){
@@ -218,6 +224,7 @@ build_litecoind(){
   make -f makefile.unix USE_UPNP=-
   cp litecoind /usr/bin/
   cd ../..
+  rm -rf litecoin
 }
 
 git_litecoind(){
@@ -260,19 +267,20 @@ config_stratum(){
   sudo sed -i -e "s/DB_MYSQL_USER = ['][a-z]*[a-z][']/DB_MYSQL_USER = '${db_user}'/g" config.py
   sudo sed -i -e 's/\*\*empty\*\*/'${db_pass}'/g' config.py				
   sudo sed -i -e 's/POOL_TARGET = 32/POOL_TARGET = '${pool_target}'/g' config.py
-  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${EXTERNAL_IP}'/g" config.py 
+  sudo sed -i -e "s/HOSTNAME = ['][a-z]*[a-z][']/HOSTNAME = '${host_id}'/g" config.py 
   sudo sed -i -e "s/DB_MYSQL_HOST = ['][a-z]*[a-z][']/DB_MYSQL_HOST = '${db_host}'/g" config.py 
   sudo sed -i -e "s/PASSWORD_SALT = ['][a-z]*[a-z][']/PASSWORD_SALT = '${salt2}'/g" config.py 
   sudo sed -i -e "s/COINDAEMON_TRUSTED_HOST = ['][a-z]*[a-z][']/COINDAEMON_TRUSTED_HOST = '${rpc_host}'/g" config.py 
   sudo sed -i -e "s/LISTEN_SOCKET_TRANSPORT = [0-9]*[0-9]/LISTEN_SOCKET_TRANSPORT = ${stratum_port}/g" config.py 
+  sudo sed -i -e "s/twistd[-]stratum[-]mining/${currency_abv}\-twistd\-stratum\-mining/g" config.py 
   sudo sed -i -e "s/DB_MYSQL_PORT = [0-9]*[0-9]/DB_MYSQL_PORT = ${db_port}/g" config.py 	
   sudo sed -i -e "s/MEMCACHE_PREFIX = [\"]/MEMCACHE_PREFIX = \"${currency_abv}\_/g" config.py 	
   sudo sed -i -e "s/MEMCACHE_PORT = [0-9]*[0-9]/MEMCACHE_PORT = ${memcache_port}/g" config.py 
   sudo sed -i -e "s/PASSWORD_SALT = ['][a-z_]*[_a-z][']/PASSWORD_SALT = '${salt2}'/g" config.py	
-  sudo sed -i -e 's/set_valid_addresss_in_config!/'${wallet}'/g' config.py	
+  sudo sed -i -e 's/set_valid_addresss_in_config!/'${wallet}'/g' config.py		
   cd ../..
-  juju-log "   Finished configuring CONFIG.PY."
 }
+
 
 build_stratum_1(){
   cd ${base_dir}/stratum-mining-${currency_abv}
@@ -368,10 +376,10 @@ config_mpos(){
   sudo sed -i -e "s/username[']] = ['][a-z]*[a-z][']/username\'\] = '${mpos_user}'/g" global.inc.php 
   sudo sed -i -e "s/password[']] = ['][a-z]*[a-z][']/password\'\] = '${mpos_pass}'/g" global.inc.php 
   sudo sed -i -e "s/db['][]][[][']host[']] = ['][a-z]*[a-z][']/db\'\]\[\'host\'\] = '${db_host}'/g" global.inc.php 
-  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = '${host_id}\:${rpc_port}/g" global.inc.php 
+  sudo sed -i -e "s/host[']] = ['][a-z]*[a-z]\:[0-9]*[0-9]/host\'\] = 'localhost\:${rpc_port}/g" global.inc.php 
   sudo sed -i -e "s/db['][]][[][']port[']] = [0-9]*[0-9]/db\'\]\[\'port\'\]  = ${db_port}/g" global.inc.php 
   sudo sed -i -e "s/coinname[']] = ['][A-Z]*[a-z]*[a-z][']/coinname\'\] = '${coin_type}'/g" global.inc.php 
-  sudo sed -i -e "s/stratumurl[']] = [']*['];/stratumurl\'\] = '${EXTERNAL_IP}';/g" global.inc.php 
+  sudo sed -i -e "s/stratumurl[']] = [']*['];/stratumurl\'\] = '${host_id}';/g" global.inc.php 
   sudo sed -i -e "s/stratumport[']] = ['][0-9]*[0-9][']/stratumport\'\] = '${stratum_port}'/g" global.inc.php 	
   sudo sed -i -e "s/price['][]][[][']currency[']] = ['][A-Z]*[A-Z][']/price\'\]\[\'currency\'\] = '${price_currency}'/g" global.inc.php 
   sudo sed -i -e "s/config[[][']currency[']] = ['][A-Z]*[A-Z][']/config\[\'currency\'\] = '${currency_abv}'/g" global.inc.php 
@@ -384,6 +392,7 @@ config_mpos(){
   sudo sed -i -e "s/reward['][]][[][']default[']] = [0-9]*[0-9]/reward\'\]\[\'default\'\]  = ${pps_reward}/g" global.inc.php
   sudo sed -i -e "s/keyprefix[']] = [']/keyprefix\'\]  = \'${currency_abv}\_/g" global.inc.php
   sudo sed -i -e "s/memcache['][]][[][']port[']] = [0-9]*[0-9]/memcache\'\]\[\'port\'\] = ${memcache_port}/g" global.inc.php
+  sudo sed -i -e "s/cookie['][]][[][']path[']] = ['\/]/cookie\'\]\[\'path\'\] = \'\/${currency_abv}/g" global.inc.php
   #sudo sed -i -e "s/coinurl[']] = ['a-z:\/]*[a-z.-]*[.a-z]*[a-z']/coinurl[']\] = '${coin_url}'/g" global.inc.php #issue?
   #sudo sed -i -e "s/price['][]][[][']url[']] = ['][a-z:\/]*[a-z.-]*[.a-z]*[a-z][']/price'\]\['url'\] = '${price_url}'/g" global.inc.php  #issue
   #sudo sed -i -e "s/price['][]][[][']target[']] = ['][\/a-z]*[a-z\/0-9]*[0-9\/a-z]*[a-z_]*[a-z\/]*[a-z']/price'\]\['target'\] = '${price_target}'/g" global.inc.php #issue?
